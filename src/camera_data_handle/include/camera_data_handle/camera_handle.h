@@ -5,34 +5,36 @@
 #include "sensor_msgs/msg/image.hpp"
 #include "opencv4/opencv2/opencv.hpp"
 #include "cv_bridge/cv_bridge.h"
+#include "std_msgs/msg/float64_multi_array.hpp"
 
 #include "../Yolov8Detector/Yolov8Detector.h"
 
+namespace camera {
+    class ReceiveData : public rclcpp::Node {
+    public:
+        explicit ReceiveData();
 
-class ReceiveData : public rclcpp::Node {
-public:
-    explicit ReceiveData();
+    private:
+        void imageCallback(sensor_msgs::msg::Image::ConstSharedPtr msg);
 
-private:
-    void imageCallback(sensor_msgs::msg::Image::ConstSharedPtr msg) ;
+        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription;
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr position_pub;
+        rclcpp::TimerBase::SharedPtr timer_;
 
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription;
-    rclcpp::TimerBase::SharedPtr timer_;
+        std::vector<std::string> output_names_;
+        std::vector<std::string> class_names_;
 
-    std::vector<std::string> output_names_;
-    std::vector<std::string> class_names_;
+        cv::dnn::Net net_;
 
-    cv::dnn::Net net_;
+        std::string model_path_;
 
-    std::string model_path_;
+        Yolov8::YOLOv8Detector detector;
 
-    Yolov8::YOLOv8Detector detector;
-
-    double confidence_threshold_;
-    double nms_threshold_;
-    bool has_received_{false};
-};
-
+        double confidence_threshold_;
+        double nms_threshold_;
+        bool has_received_{false};
+    };
+}
 
 
 #endif //CAMERA_HANDLE_H

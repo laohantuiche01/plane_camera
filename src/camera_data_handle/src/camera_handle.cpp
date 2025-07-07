@@ -6,11 +6,11 @@
 #include "opencv4/opencv2/opencv.hpp"
 #include "cv_bridge/cv_bridge.h"
 
-ReceiveData::ReceiveData(): Node("receive_data"), confidence_threshold_(0.5),
-                            nms_threshold_(0.4),
-                            detector(
-                                "/home/zxk/桌面/Unmanned_Aerial_Vehicle_Workspace/camera_handle/src/camera_data_handle/model/best.onnx"
-                                ) {
+camera::ReceiveData::ReceiveData(): Node("receive_data"), confidence_threshold_(0.5),
+                                    nms_threshold_(0.4),
+                                    detector(
+                                        "/home/zxk/桌面/Unmanned_Aerial_Vehicle_Workspace/camera_handle/src/camera_data_handle/model/best.onnx"
+                                    ) {
     RCLCPP_INFO(this->get_logger(), "Receive Data");
 
     this->declare_parameter("nms_threshold_", 0.4);
@@ -18,6 +18,17 @@ ReceiveData::ReceiveData(): Node("receive_data"), confidence_threshold_(0.5),
 
     this->get_parameter("confidence_threshold_", confidence_threshold_);
     this->get_parameter("nms_threshold_", nms_threshold_);
+
+    position_pub = this->create_publisher<std_msgs::msg::Float64MultiArray>(
+        "/camera/target/position",
+        10
+    );
+
+    image_subscription = this->create_subscription<sensor_msgs::msg::Image>(
+        "/camera/camera/color/image_raw",
+        10,
+        std::bind(&ReceiveData::imageCallback, this, std::placeholders::_1)
+    );
 
     timer_ = this->create_wall_timer(
         std::chrono::seconds(1), [this]() {
@@ -28,15 +39,9 @@ ReceiveData::ReceiveData(): Node("receive_data"), confidence_threshold_(0.5),
                 timer_->cancel();
             }
         });
-
-    image_subscription = this->create_subscription<sensor_msgs::msg::Image>(
-        "/camera/camera/color/image_raw",
-        10,
-        std::bind(&ReceiveData::imageCallback, this, std::placeholders::_1)
-    );
 }
 
-void ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr msg) {
+void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr msg) {
     has_received_ = true;
     try {
         if (msg->width <= 0 || msg->height <= 0) {
@@ -49,25 +54,35 @@ void ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr ms
         cv::Mat image;
         cv::cvtColor(temp_image, image, cv::COLOR_BGR2RGB);
 
+        std::vector<std::vector<double> > positions;
 
         std::vector<Yolov8::Detection> detections = detector.detect(image);
-        detector.drawDetections(image, detections);
+        positions = detector.drawDetections(image, detections);
 
-        if (!cv_ptr->image.empty()) {
-            if (cv_ptr->image.cols <= 0 || cv_ptr->image.rows <= 0) {
-                RCLCPP_WARN(this->get_logger(), "Invalid OpenCV image size: %dx%d",
-                            cv_ptr->image.cols, cv_ptr->image.rows);
-                return;
-            }
+        std_msgs::msg::Float64MultiArray position_msg;
 
-            namedWindow("image", cv::WINDOW_NORMAL);
-            cv::resizeWindow("image", 1600, 1200);
-
-            cv::imshow("image", image);
-            cv::waitKey(1);
-        } else {
-            RCLCPP_WARN(this->get_logger(), "Received empty image");
+        if (positions.empty()) {
+            RCLCPP_WARN(this->get_logger(), "No detections found");
+            position_msg.data = std::vector<double>(2,10000);
+            position_pub->publish(position_msg);
         }
+        else {
+            while (!positions.empty()) {
+                position_msg.data = positions.front();
+                positions.pop_back();
+                position_pub->publish(position_msg);
+            }
+        }
+
+        cv::line(image,cv::Point(0,240),cv::Point(640,240),cv::Scalar(0, 255, 0), 1);
+        cv::line(image,cv::Point(320,0),cv::Point(320,480),cv::Scalar(0, 255, 0), 1);
+
+        namedWindow("image", cv::WINDOW_NORMAL);
+        cv::resizeWindow("image", 1600, 1200);
+
+        cv::imshow("image", image);
+        cv::waitKey(1);
+
     } catch (cv_bridge::Exception &e) {
         RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
     } catch (const std::exception &e) {

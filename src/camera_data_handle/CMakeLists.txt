@@ -41,6 +41,20 @@ install(TARGETS
         receive_data
         DESTINATION lib/${PROJECT_NAME})
 
+add_executable(tf_publish
+        src/tf_publisher.cpp
+)
+ament_target_dependencies(
+        tf_publish
+        rclcpp
+        tf2
+        tf2_ros
+        tf2_geometry_msgs
+)
+install(TARGETS
+        tf_publish
+        DESTINATION lib/${PROJECT_NAME})
+
 if (BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
     # the following line skips the linter which checks for copyrights

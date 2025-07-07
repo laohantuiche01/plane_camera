@@ -35,7 +35,7 @@ namespace Yolov8 {
 
         vector<Detection> detect(Mat &image);
 
-        void drawDetections(Mat &image, const vector<Detection> &detections) ;
+        std::vector<std::vector<double>> drawDetections(Mat &image, const vector<Detection> &detections) ;
 
     private:
         Net net;
@@ -43,6 +43,8 @@ namespace Yolov8 {
         int imgSize;
         float confThreshold;
         float nmsThreshold;
+        int imgWidth;
+        int imgHeight;
 
         [[nodiscard]] Mat preprocess(const Mat &image) const ;
 

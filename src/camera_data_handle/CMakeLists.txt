@@ -32,10 +32,10 @@ ament_target_dependencies(
         rclcpp
         OpenCV
         cv_bridge
-        onnxruntime
         tf2
         tf2_ros
         tf2_geometry_msgs
+        yaml-cpp
 )
 install(TARGETS
         receive_data
@@ -52,6 +52,16 @@ if (BUILD_TESTING)
     set(ament_cmake_cpplint_FOUND TRUE)
     ament_lint_auto_find_test_dependencies()
 endif ()
+
+install(
+        DIRECTORY config
+        DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+        DIRECTORY launch
+        DESTINATION share/${PROJECT_NAME}
+)
 
 ament_auto_package(
         INSTALL_TO_SHARE

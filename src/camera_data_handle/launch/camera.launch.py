@@ -8,7 +8,7 @@ def generate_launch_description():
             package="camera_data_handle",
             executable='receive_data',
             name='receive_data',
-            # parameters=[
-            #     'path/to/param.yaml']
+            parameters=[
+                '/home/zxk/桌面/Unmanned_Aerial_Vehicle_Workspace/camera_handle/src/camera_data_handle/config/param.yaml']
         )
     ])

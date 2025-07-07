@@ -1,6 +1,7 @@
 #include "../include/camera_data_handle/camera_handle.h"
 
 #include "rclcpp/rclcpp.hpp"
+#include "yaml-cpp/yaml.h"
 #include "sensor_msgs/msg/image.hpp"
 #include "opencv4/opencv2/opencv.hpp"
 #include "cv_bridge/cv_bridge.h"
@@ -12,7 +13,8 @@ ReceiveData::ReceiveData(): Node("receive_data"), confidence_threshold_(0.5),
                                 ) {
     RCLCPP_INFO(this->get_logger(), "Receive Data");
 
-    this->declare_parameter("model_path", model_path_);
+    this->declare_parameter("test_param", "123");
+
 
     timer_ = this->create_wall_timer(
         std::chrono::seconds(1), [this]() {

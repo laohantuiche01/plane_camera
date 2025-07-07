@@ -31,9 +31,6 @@ private:
     double confidence_threshold_;
     double nms_threshold_;
     bool has_received_{false};
-
-
-
 };
 
 

@@ -1,4 +1,4 @@
 receive_data:
   ros__parameters:
-    nms_threshold_: "0.4"
-    confidence_threshold_: "0.5"
+    nms_threshold_: 0.4
+    confidence_threshold_: 0.5

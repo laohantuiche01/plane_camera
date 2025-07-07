@@ -13,8 +13,11 @@ ReceiveData::ReceiveData(): Node("receive_data"), confidence_threshold_(0.5),
                                 ) {
     RCLCPP_INFO(this->get_logger(), "Receive Data");
 
-    this->declare_parameter("test_param", "123");
+    this->declare_parameter("nms_threshold_", 0.4);
+    this->declare_parameter("confidence_threshold_", 0.5);
 
+    this->get_parameter("confidence_threshold_", confidence_threshold_);
+    this->get_parameter("nms_threshold_", nms_threshold_);
 
     timer_ = this->create_wall_timer(
         std::chrono::seconds(1), [this]() {

@@ -33,6 +33,10 @@ namespace camera {
         double confidence_threshold_;
         double nms_threshold_;
         bool has_received_{false};
+
+        cv::TickMeter fps_timer_;
+        double fps_time_sum;
+        long fps_sum;
     };
 }
 

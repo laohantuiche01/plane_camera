@@ -5,15 +5,15 @@ if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif ()
 
-set(ONNX_RUNTIME_DIR "/home/zxk/桌面/original_data/onnxruntime/onnxruntime")
-find_library(ONNX_RUNTIME_LIB
-        NAMES onnxruntime
-        HINTS ${ONNX_RUNTIME_DIR}/build/Linux/Release
-)
-find_path(ONNX_RUNTIME_INCLUDE_DIR
-        NAMES onnxruntime_cxx_api.h
-        HINTS ${ONNX_RUNTIME_DIR}/include/onnxruntime/core/session
-)
+#set(ONNX_RUNTIME_DIR "/home/zxk/桌面/original_data/onnxruntime/onnxruntime")
+#find_library(ONNX_RUNTIME_LIB
+#        NAMES onnxruntime
+#        HINTS ${ONNX_RUNTIME_DIR}/build/Linux/Release
+#)
+#find_path(ONNX_RUNTIME_INCLUDE_DIR
+#        NAMES onnxruntime_cxx_api.h
+#        HINTS ${ONNX_RUNTIME_DIR}/include/onnxruntime/core/session
+#)
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 # uncomment the following section in order to fill in

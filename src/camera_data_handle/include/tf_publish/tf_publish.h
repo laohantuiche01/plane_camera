@@ -7,7 +7,13 @@
 namespace camera {
     class TF_Publisher : public rclcpp::Node {
     public:
-        TF_Publisher(): Node("TF_publish"), height(1.5) {
+        TF_Publisher(): Node("TF_publish"), height(1.5), tf2_reflash(0),tf2_reflash_num(0) {
+            this->declare_parameter("height", 1.5);
+            this->declare_parameter("tf2_reflash_num", 10);
+
+            this->get_parameter("tf2_reflash_num", tf2_reflash_num);
+            this->get_parameter("height", height);
+
             tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
             position_subscription = this->create_subscription<std_msgs::msg::Float64MultiArray>(
                 "/camera/target/position",
@@ -22,11 +28,26 @@ namespace camera {
 
     private:
         void position_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
+            std::cout<<tf2_reflash_num<<std::endl;
+            if (msg.get()->data.empty()) //处理为空的情况
+            {
+                tf2_reflash++;
+                if (tf2_reflash >= tf2_reflash_num) {
+                    transform_.transform.translation.x = 0;
+                    transform_.transform.translation.y = 0;
+                    transform_.transform.translation.z = 0;
+                    tf2_reflash = 0;
+                }
+                return;
+            }
+
+            tf2_reflash = 0; // 更新
+
             double x, y, z;
             x = msg->data[0];
             y = msg->data[1];
             z = height;
-            std::cout << x << " " << y << " " << z << std::endl;
+            //std::cout << x << " " << y << " " << z << std::endl;
             transform_.transform.translation.x = x * 0.01;
             transform_.transform.translation.y = y * 0.01;
             transform_.transform.translation.z = z * 0.01;
@@ -60,6 +81,9 @@ namespace camera {
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
         geometry_msgs::msg::TransformStamped transform_;
         bool transform_initialized = false;
+
+        long tf2_reflash;
+        int tf2_reflash_num;
 
         double height;
     };

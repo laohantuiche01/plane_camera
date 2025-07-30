@@ -2,7 +2,6 @@
 #define YOLOV8DETECTOR_H
 
 #include <opencv2/opencv.hpp>
-//#include <onnxruntime/onnxruntime_cxx_api.h>
 #include <vector>
 
 namespace Yolov8 {

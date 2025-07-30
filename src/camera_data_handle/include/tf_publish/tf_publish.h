@@ -28,7 +28,7 @@ namespace camera {
 
     private:
         void position_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
-            std::cout<<tf2_reflash_num<<std::endl;
+            //std::cout<<tf2_reflash_num<<std::endl;
             if (msg.get()->data.empty()) //处理为空的情况
             {
                 tf2_reflash++;
@@ -47,10 +47,10 @@ namespace camera {
             x = msg->data[0];
             y = msg->data[1];
             z = height;
-            //std::cout << x << " " << y << " " << z << std::endl;
-            transform_.transform.translation.x = x * 0.01;
-            transform_.transform.translation.y = y * 0.01;
-            transform_.transform.translation.z = z * 0.01;
+            std::cout << x << " " << y << " " << z << std::endl;
+            transform_.transform.translation.x = x * 0.001;
+            transform_.transform.translation.y = y * 0.001;
+            transform_.transform.translation.z = z * 0.001;
         }
 
         void publish_transform() {

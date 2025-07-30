@@ -36,7 +36,7 @@ namespace camera {
 
         cv::TickMeter fps_timer_;
         double fps_time_sum;
-        long fps_sum;
+        int fps_sum;
     };
 }
 

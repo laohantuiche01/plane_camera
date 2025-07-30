@@ -2,7 +2,7 @@ receive_data:
   ros__parameters:
     nms_threshold_: 0.4  #nms最大抑制
     confidence_threshold_: 0.5  #正确率最低值
-    detector : "/home/zxk/桌面/Unmanned_Aerial_Vehicle_Workspace/camera_handle/src/camera_data_handle/model/best.onnx"
+    detector : "../model/best.onnx"
 
 tf_publisher:
   ros__parameters:

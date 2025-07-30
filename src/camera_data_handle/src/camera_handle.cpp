@@ -11,7 +11,7 @@ camera::ReceiveData::ReceiveData(): Node("receive_data"), confidence_threshold_(
                                     fps_time_sum(0.0),
                                     fps_sum(0),
                                     detector(
-                                        "/home/zxk/桌面/Unmanned_Aerial_Vehicle_Workspace/camera_handle/src/camera_data_handle/model/best.onnx") {
+                                        "../model/best.onnx") {
     RCLCPP_INFO(this->get_logger(), "Receive Data");
 
     this->declare_parameter("nms_threshold_", 0.4);
@@ -67,7 +67,7 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
 
         if (positions.empty()) {
             RCLCPP_WARN(this->get_logger(), "No detections found");
-            position_msg.data = std::vector<double>(1, 0);
+            position_msg.data = std::vector<double>(0, 0);
             position_pub->publish(position_msg);
         } else {
             while (!positions.empty()) {
@@ -76,7 +76,7 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
                 position_pub->publish(position_msg);
             }
         }
-
+        cv::circle(image,cv::Point(320,240),207,cv::Scalar(0,255,0),1);
         cv::line(image, cv::Point(0, 240), cv::Point(640, 240), cv::Scalar(0, 255, 0), 1);
         cv::line(image, cv::Point(320, 0), cv::Point(320, 480), cv::Scalar(0, 255, 0), 1);
 
@@ -94,7 +94,7 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
 
         fps_timer_.reset();
 
-        if (fps_sum == 100) {
+        if (fps_sum == 20) {
             fps_sum = 0;
             fps_time_sum = 0;
         }

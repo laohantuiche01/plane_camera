@@ -8,6 +8,7 @@
 #include "std_msgs/msg/float64_multi_array.hpp"
 
 #include "../Yolov8Detector/Yolov8Detector.h"
+#include "../kalman/kalmanbox.h"
 
 namespace camera {
     class ReceiveData : public rclcpp::Node {
@@ -17,26 +18,29 @@ namespace camera {
     private:
         void imageCallback(sensor_msgs::msg::Image::ConstSharedPtr msg);
 
-        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription;
-        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr position_pub;
+        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription_;
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr position_pub_;
         rclcpp::TimerBase::SharedPtr timer_;
 
         std::vector<std::string> output_names_;
         std::vector<std::string> class_names_;
 
+        camera::KalmanBoxTracker* tracker_{nullptr};
+        bool tracking_num_{false};
+
         cv::dnn::Net net_;
 
         std::string model_path_;
 
-        Yolov8::YOLOv8Detector detector;
+        Yolov8::YOLOv8Detector detector_;
 
-        double confidence_threshold_;
-        double nms_threshold_;
+        double confidence_threshold_{0.0};
+        double nms_threshold_{0.0};
         bool has_received_{false};
 
         cv::TickMeter fps_timer_;
-        double fps_time_sum;
-        int fps_sum;
+        double fps_time_sum_{0.0};
+        int fps_sum_{0};
     };
 }
 

@@ -1,0 +1,77 @@
+#ifndef CAMERA_DATA_HANDLE_KALMANBOX_H
+#define CAMERA_DATA_HANDLE_KALMANBOX_H
+
+#include <opencv2/opencv.hpp>
+#include <iostream>
+
+using namespace cv;
+using namespace std;
+namespace camera {
+    class KalmanBoxTracker {
+    public:
+        explicit KalmanBoxTracker(const Rect& initBox) {
+            // 卡尔曼滤波器：状态维度8 (x,y,w,h,vx,vy,vw,vh), 测量维度4 (x,y,w,h)
+            kf_ = KalmanFilter(8, 4, 0);
+
+            // 状态转移矩阵(F)
+            kf_.transitionMatrix = (Mat_<float>(8, 8) <<
+                1, 0, 0, 0, 1, 0, 0, 0,
+                0, 1, 0, 0, 0, 1, 0, 0,
+                0, 0, 1, 0, 0, 0, 1, 0,
+                0, 0, 0, 1, 0, 0, 0, 1,
+                0, 0, 0, 0, 1, 0, 0, 0,
+                0, 0, 0, 0, 0, 1, 0, 0,
+                0, 0, 0, 0, 0, 0, 1, 0,
+                0, 0, 0, 0, 0, 0, 0, 1);
+
+            // 测量矩阵(H)
+            setIdentity(kf_.measurementMatrix);
+
+            // 过程噪声协方差 (Q)
+            setIdentity(kf_.processNoiseCov, Scalar::all(1e-2));
+
+            // 测量噪声协方差 (R)
+            setIdentity(kf_.measurementNoiseCov, Scalar::all(1e-1));
+
+            // 后验误差协方差 (P)
+            setIdentity(kf_.errorCovPost, Scalar::all(1));
+
+            // 状态
+            Point2f center = Point2f(static_cast<float>(initBox.x + initBox.width/2.0),
+                                    static_cast<float>(initBox.y + initBox.height/2.0));
+            kf_.statePost = (Mat_<float>(8, 1) <<
+                center.x, center.y, initBox.width, initBox.height, 0, 0, 0, 0);
+        }
+
+        // 预测目标位置
+        Point2f predict() {
+            Mat prediction = kf_.predict();
+            return Point2f(prediction.at<float>(0), prediction.at<float>(1));
+        }
+
+        void update(const Rect& measBox) {
+            Point2f center = Point2f(static_cast<float>(measBox.x + measBox.width/2.0),
+                                    static_cast<float>(measBox.y + measBox.height/2.0));
+            Mat measurement = (Mat_<float>(4, 1) <<
+                center.x, center.y, measBox.width, measBox.height);
+            kf_.correct(measurement);
+        }
+
+        Rect get_state() {
+            Mat state = kf_.statePost;
+            float w = state.at<float>(2);
+            float h = state.at<float>(3);
+            float x = state.at<float>(0) - w/2;
+            float y = state.at<float>(1) - h/2;
+            return Rect(x, y, w, h);
+        }
+
+    private:
+        KalmanFilter kf_;
+    };
+
+}
+
+
+
+#endif

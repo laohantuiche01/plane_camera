@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 project(camera_data_handle)
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -6,7 +6,32 @@ if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif ()
 
 find_package(ament_cmake_auto REQUIRED)
+find_package(OpenVINO REQUIRED)
 ament_auto_find_build_dependencies()
+
+#option(IF_USE_OPENVINO "Detection use openvino" ON)
+
+#if(IF_USE_OPENVINO)
+#    add_definitions(-DETECTION_OPENVINO_OPEN)
+#    message(STATUS "OpenVINO support enabled-----------------------")
+#else ()
+#    add_definitions(-DETECTION_OPEN)
+#    message(STATUS "OpenVINO support unabled-----------------------!!!!!!!!!!")
+#endif ()
+
+add_executable(mytest
+        src/linshi.cpp
+)
+ament_target_dependencies(
+        mytest
+        OpenVINO
+)
+target_link_libraries(mytest
+        openvino::runtime
+)
+install(TARGETS
+        mytest
+        DESTINATION lib/${PROJECT_NAME})
 
 add_executable(receive_data
         src/receive_data.cpp
@@ -23,6 +48,9 @@ ament_target_dependencies(
         tf2_geometry_msgs
         yaml-cpp
 
+)
+target_link_libraries(receive_data
+        openvino::runtime
 )
 install(TARGETS
         receive_data

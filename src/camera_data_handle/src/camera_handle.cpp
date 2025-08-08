@@ -5,8 +5,10 @@
 #include "sensor_msgs/msg/image.hpp"
 #include "opencv4/opencv2/opencv.hpp"
 #include "cv_bridge/cv_bridge.h"
+#include <openvino/openvino.hpp>
 
-#define PREDICT_OPEN
+//#define PREDICT_OPEN
+
 
 camera::ReceiveData::ReceiveData() : Node("receive_data"),
                                      detector_(
@@ -65,6 +67,7 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         std::vector<Yolov8::Detection> detections = detector_.detect(image);
         positions = detector_.drawDetections(image, detections);
 
+
 #ifdef PREDICT_OPEN
         //卡尔曼滤波器接口
         if (!detections.empty()) {
@@ -75,13 +78,13 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
                 tracker_ = new KalmanBoxTracker(detections.front().box);
             } else if (tracking_num_) {
                 if (!detections.empty()) {
-                    RCLCPP_ERROR(this->get_logger(), "-----------------------------!!!!!");
+                    //RCLCPP_ERROR(this->get_logger(), "-----------------------------!!!!!");
                     Rect input_rect = detections.front().box;
                     tracker_->update(input_rect);
                 }
                 Point2f predictCenter = tracker_->predict();
                 Rect estimatedBox = tracker_->get_state();
-                RCLCPP_ERROR(this->get_logger(), "-----------------------------");
+                //RCLCPP_ERROR(this->get_logger(), "-----------------------------");
                 circle(image, predictCenter, 5, Scalar(200, 0, 120), 2);
                 cv::rectangle(image, estimatedBox, Scalar(255, 0, 0), 2);
             }

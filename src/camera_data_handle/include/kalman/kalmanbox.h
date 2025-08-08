@@ -10,7 +10,7 @@ namespace camera {
     class KalmanBoxTracker {
     public:
         explicit KalmanBoxTracker(const Rect& initBox) {
-            // 卡尔曼滤波器：状态维度8 (x,y,w,h,vx,vy,vw,vh), 测量维度4 (x,y,w,h)
+            // 卡尔曼滤波器：状态维度8(x,y,w,h,vx,vy,vw,vh), 测量维度4 (x,y,w,h)
             kf_ = KalmanFilter(8, 4, 0);
 
             // 状态转移矩阵(F)
@@ -71,7 +71,5 @@ namespace camera {
     };
 
 }
-
-
 
 #endif

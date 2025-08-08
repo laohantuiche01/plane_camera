@@ -5,8 +5,6 @@
 #include <vector>
 #include <openvino/openvino.hpp>
 
-#define DETECTION_OPENVINO_OPEN
-
 namespace Yolov8 {
 
     inline std::vector<std::string> defaultClassNames = {
@@ -19,7 +17,6 @@ namespace Yolov8 {
         float confidence;
         cv::Rect box;
     };
-
 
     class YOLOv8Detector {
     public:

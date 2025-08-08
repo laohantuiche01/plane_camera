@@ -15,24 +15,13 @@ ament_auto_find_build_dependencies()
 #    add_definitions(-DETECTION_OPENVINO_OPEN)
 #    message(STATUS "OpenVINO support enabled-----------------------")
 #else ()
-#    add_definitions(-DETECTION_OPEN)
 #    message(STATUS "OpenVINO support unabled-----------------------!!!!!!!!!!")
 #endif ()
 
-add_executable(mytest
-        src/linshi.cpp
-)
-ament_target_dependencies(
-        mytest
-        OpenVINO
-)
-target_link_libraries(mytest
-        openvino::runtime
-)
-install(TARGETS
-        mytest
-        DESTINATION lib/${PROJECT_NAME})
-
+#add_definitions(-DFPS_VISABLE_OPEN)
+add_definitions(-DDETECTION_OPENVINO_OPEN)
+#add_definitions(-DPREDICT_OPEN)
+add_definitions(-DPROJECT_PATH=${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(receive_data
         src/receive_data.cpp
         src/Yolov8Detector.cpp

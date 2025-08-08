@@ -4,8 +4,3 @@ receive_data:
     confidence_threshold_: 0.5  #正确率最低值
     detector : "../model/best.onnx"
 
-tf_publisher:
-  ros__parameters:
-    height : 1.5
-    tf2_reflash_num : 5
-

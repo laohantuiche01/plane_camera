@@ -7,13 +7,15 @@
 #include "cv_bridge/cv_bridge.h"
 #include <openvino/openvino.hpp>
 
-//#define PREDICT_OPEN
 
+#define STR(s) #s
+#define MACRO_TO_STR(s) STR(s)
 
 camera::ReceiveData::ReceiveData() : Node("receive_data"),
                                      detector_(
-                                         "../model/best.onnx") {
+                                         MACRO_TO_STR(PROJECT_PATH)"/model/best.onnx") {
     RCLCPP_INFO(this->get_logger(), "Receive Data");
+    RCLCPP_INFO(this->get_logger(), MACRO_TO_STR(PROJECT_PATH)"/model/best.onnx");
 
     this->declare_parameter("nms_threshold_", 0.4);
     this->declare_parameter("confidence_threshold_", 0.5);

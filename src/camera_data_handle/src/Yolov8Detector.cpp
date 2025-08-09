@@ -37,7 +37,11 @@ Yolov8::YOLOv8Detector::YOLOv8Detector(const string &modelPath, const vector<str
         inputShape[3] = imgSize_;
         model->reshape({inputShape});
 
-        compiled_model_ = core_.compile_model(model, "GPU");
+        for (const auto& device : core_.get_available_devices()) {
+            std::cout << "Available device: " << device << std::endl;
+        }
+
+        compiled_model_ = core_.compile_model(model, "CPU");
         infer_request_ = compiled_model_.create_infer_request();
     } catch (const std::exception &e) {
         std::cerr << "cannot initialize : " << e.what() << std::endl;

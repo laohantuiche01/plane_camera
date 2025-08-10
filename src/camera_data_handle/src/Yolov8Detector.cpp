@@ -181,6 +181,7 @@ std::vector<std::vector<double> > Yolov8::YOLOv8Detector::drawDetections(
         Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
         Rect labelRect = Rect(detection.box.x, detection.box.y - labelSize.height - baseLine,
                               labelSize.width, labelSize.height + baseLine);
+
         rectangle(image, labelRect, Scalar(0, 255, 0), FILLED);
 
 

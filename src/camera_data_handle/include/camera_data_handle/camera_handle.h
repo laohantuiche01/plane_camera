@@ -9,6 +9,7 @@
 
 #include "../Yolov8Detector/Yolov8Detector.h"
 #include "../kalman/kalmanbox.h"
+#include "../point_tracking/point_tracking.h"
 
 namespace camera {
     class ReceiveData : public rclcpp::Node {
@@ -26,13 +27,22 @@ namespace camera {
         std::vector<std::string> class_names_;
 
         camera::KalmanBoxTracker* tracker_{nullptr};
-        bool tracking_num_{false};
+        int tracking_num_{0};
+
+        //如果检测或者跟踪都失效时设置为false
+        bool if_do_tracking_{false};
 
         cv::dnn::Net net_;
 
         std::string model_path_;
 
+#ifndef KEY_POINT_TRACKING
         Yolov8::YOLOv8Detector detector_;
+#endif
+
+#ifdef KEY_POINT_TRACKING
+        Yolov8::YOLOv8Tracker detector_;
+#endif
 
         double confidence_threshold_{0.0};
         double nms_threshold_{0.0};

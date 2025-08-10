@@ -20,12 +20,46 @@ ament_auto_find_build_dependencies()
 
 #add_definitions(-DFPS_VISABLE_OPEN)
 add_definitions(-DDETECTION_OPENVINO_OPEN)
-#add_definitions(-DPREDICT_OPEN)
+add_definitions(-DKEY_POINT_TRACKING)
+add_definitions(-DPREDICT_OPEN)
 add_definitions(-DPROJECT_PATH=${CMAKE_CURRENT_SOURCE_DIR})
+
+function(add_and_install_executable target_name)
+    set(options "")
+    set(oneValueArgs "")
+    set(multiValueArgs SRCS DEPS LIBS)
+    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    add_executable(${target_name} ${ARG_SRCS})
+
+    if (ARG_DEPS)
+        ament_target_dependencies(${target_name} ${ARG_DEPS})
+    endif ()
+
+    if (ARG_LIBS)
+        target_link_libraries(${target_name} ${ARG_LIBS})
+    endif ()
+
+    install(TARGETS ${target_name}
+            DESTINATION lib/${PROJECT_NAME})
+endfunction()
+
+add_executable(linshi
+        src/linshi.cpp
+)
+ament_target_dependencies(
+        linshi
+        OpenCV
+)
+install(TARGETS
+        linshi
+        DESTINATION lib/${PROJECT_NAME})
+
 add_executable(receive_data
         src/receive_data.cpp
         src/Yolov8Detector.cpp
         src/camera_handle.cpp
+        src/point_tracking.cpp
 )
 ament_target_dependencies(
         receive_data

@@ -63,17 +63,24 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         cv::Mat image;
         cv::cvtColor(temp_image, image, cv::COLOR_BGR2RGB);
 
-        std::vector<std::vector<double> > positions;
-
         //目标检测接口
         std::vector<Yolov8::Detection> detections = detector_.detect(image);
-        positions = detector_.drawDetections(image, detections);
+#ifdef KEY_POINT_TRACKING
+        if (!detections.empty()) if_do_tracking_ = true;
+
+        if (if_do_tracking_ && detections.empty()) {
+            detections = detector_.track(image);
+            if (detections.empty()) if_do_tracking_ = false;
+        }
+#endif
+
+        std::vector<std::vector<double> > positions = detector_.drawDetections(image, detections);
 
 
 #ifdef PREDICT_OPEN
         //卡尔曼滤波器接口
         if (!detections.empty()) {
-            tracking_num_ = true;
+            tracking_num_ = 1;
         }
         try {
             if (tracker_ == nullptr && tracking_num_) {
@@ -93,6 +100,14 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         } catch (cv::Exception e) {
             RCLCPP_WARN(this->get_logger(), "%s", e.what());
         }
+
+        if (detections.empty() && tracking_num_) {
+            tracking_num_++;
+            if (tracking_num_ == 10) {
+                tracking_num_ = 0;
+            }
+        }
+
 #endif
 
         //信息发送变量

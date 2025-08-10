@@ -28,13 +28,18 @@ namespace camera {
             setIdentity(kf_.measurementMatrix);
 
             // 过程噪声协方差 (Q)
-            setIdentity(kf_.processNoiseCov, Scalar::all(1e-2));
+            setIdentity(kf_.processNoiseCov, Scalar::all(1e-3));
 
             // 测量噪声协方差 (R)
-            setIdentity(kf_.measurementNoiseCov, Scalar::all(1e-1));
+            //setIdentity(kf_.measurementNoiseCov, Scalar::all(1e-1));
+            kf_.measurementNoiseCov = Mat::zeros(4, 4, CV_32F);
+            kf_.measurementNoiseCov.at<float>(0, 0) = 1e-1;  // x坐标测量噪声（保持不变）
+            kf_.measurementNoiseCov.at<float>(1, 1) = 1e-1;  // y坐标测量噪声（保持不变）
+            kf_.measurementNoiseCov.at<float>(2, 2) = 1e-1;   // 宽度测量噪声（增大100倍）
+            kf_.measurementNoiseCov.at<float>(3, 3) = 1e-1;   // 高度测量噪声（增大100倍）
 
             // 后验误差协方差 (P)
-            setIdentity(kf_.errorCovPost, Scalar::all(1));
+            setIdentity(kf_.errorCovPost, Scalar::all(1e-2));
 
             // 状态
             Point2f center = Point2f(static_cast<float>(initBox.x + initBox.width/2.0),

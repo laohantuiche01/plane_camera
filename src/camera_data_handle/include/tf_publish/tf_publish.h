@@ -1,13 +1,24 @@
 #ifndef TF_PUBLISH_H
 #define TF_PUBLISH_H
+
+#define THE_TRANSFORM_USE_PREDICT
+//#define THE_TRANSFORM_USE_ACCELERATE
+
+#ifdef THE_TRANSFORM_USE_PREDICT
+#ifdef THE_TRANSFORM_USE_ACCELERATE
+#error "You cannot define both ! ! !"
+#endif
+#endif
+
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include "tf2_ros/transform_broadcaster.h"
 
+
 namespace camera {
     class TF_Publisher : public rclcpp::Node {
     public:
-        TF_Publisher(): Node("TF_publish"), height(1.5), tf2_reflash(0),tf2_reflash_num(0) {
+        TF_Publisher() : Node("TF_publish"), height(1.5), tf2_reflash(0), tf2_reflash_num(0) {
             this->declare_parameter("height", 1.5);
             this->declare_parameter("tf2_reflash_num", 10);
 
@@ -48,9 +59,21 @@ namespace camera {
             y = msg->data[1];
             z = height;
             std::cout << x << " " << y << " " << z << std::endl;
-            transform_.transform.translation.x = x * 0.001;
-            transform_.transform.translation.y = y * 0.001;
-            transform_.transform.translation.z = z * 0.001;
+#ifdef THE_TRANSFORM_USE_PREDICT
+            transform_.transform.translation.x = x * 0.01;
+            transform_.transform.translation.y = y * 0.01;
+            transform_.transform.translation.z = z * 0.01;
+#endif
+
+#ifdef THE_TRANSFORM_USE_ACCELERATE
+            constexpr double param = 0 ;
+
+            transform_.transform.translation.x = 0;
+            transform_.transform.translation.y = 0;
+            transform_.transform.translation.z = 0;
+
+#endif
+
         }
 
         void publish_transform() {

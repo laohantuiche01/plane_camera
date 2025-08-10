@@ -16,10 +16,18 @@ namespace Yolov8 {
         int classId;
         float confidence;
         cv::Rect box;
+        int class_id{};
+
+#ifdef KEY_POINT_TRACKING
+        std::vector<cv::Point2f> features;
+#endif
+
     };
 
     class YOLOv8Detector {
     public:
+        virtual ~YOLOv8Detector() = default;
+
         explicit YOLOv8Detector(const std::string &modelPath,
                                 const std::vector<std::string> &classNames = defaultClassNames,
                                 int imgSize = 640,
@@ -30,7 +38,7 @@ namespace Yolov8 {
 
         void setNmsThreshold(float threshold) { nmsThreshold_ = threshold; }
 
-        std::vector<Detection> detect(cv::Mat &image);
+        virtual std::vector<Detection> detect(cv::Mat &image);
 
         std::vector<std::vector<double> > drawDetections(cv::Mat &image, const std::vector<Detection> &detections);
 

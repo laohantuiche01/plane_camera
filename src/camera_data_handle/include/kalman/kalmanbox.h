@@ -10,7 +10,7 @@ namespace camera {
     class KalmanBoxTracker {
     public:
         explicit KalmanBoxTracker(const Rect& initBox) {
-            // 卡尔曼滤波器：状态维度8(x,y,w,h,vx,vy,vw,vh), 测量维度4 (x,y,w,h)
+            // x,y,w,h,vx,vy,vw,vh    x,y,w,h
             kf_ = KalmanFilter(8, 4, 0);
 
             // 状态转移矩阵(F)
@@ -33,10 +33,10 @@ namespace camera {
             // 测量噪声协方差 (R)
             //setIdentity(kf_.measurementNoiseCov, Scalar::all(1e-1));
             kf_.measurementNoiseCov = Mat::zeros(4, 4, CV_32F);
-            kf_.measurementNoiseCov.at<float>(0, 0) = 1e-1;  // x坐标测量噪声（保持不变）
-            kf_.measurementNoiseCov.at<float>(1, 1) = 1e-1;  // y坐标测量噪声（保持不变）
-            kf_.measurementNoiseCov.at<float>(2, 2) = 1e-1;   // 宽度测量噪声（增大100倍）
-            kf_.measurementNoiseCov.at<float>(3, 3) = 1e-1;   // 高度测量噪声（增大100倍）
+            kf_.measurementNoiseCov.at<float>(0, 0) = 1e-1;  // x坐标
+            kf_.measurementNoiseCov.at<float>(1, 1) = 1e-1;  // y坐标
+            kf_.measurementNoiseCov.at<float>(2, 2) = 1e-1;   // 宽度
+            kf_.measurementNoiseCov.at<float>(3, 3) = 1e-1;   // 高度
 
             // 后验误差协方差 (P)
             setIdentity(kf_.errorCovPost, Scalar::all(1e-2));

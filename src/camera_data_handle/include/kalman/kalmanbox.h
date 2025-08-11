@@ -24,13 +24,13 @@ namespace camera {
                 0, 0, 0, 0, 0, 0, 1, 0,
                 0, 0, 0, 0, 0, 0, 0, 1);
 
-            // 测量矩阵(H)
+            // 测量矩阵
             setIdentity(kf_.measurementMatrix);
 
-            // 过程噪声协方差 (Q)
+            // 过程噪声协方差
             setIdentity(kf_.processNoiseCov, Scalar::all(1e-3));
 
-            // 测量噪声协方差 (R)
+            // 测量噪声协方差
             //setIdentity(kf_.measurementNoiseCov, Scalar::all(1e-1));
             kf_.measurementNoiseCov = Mat::zeros(4, 4, CV_32F);
             kf_.measurementNoiseCov.at<float>(0, 0) = 1e-1;  // x坐标
@@ -38,7 +38,7 @@ namespace camera {
             kf_.measurementNoiseCov.at<float>(2, 2) = 1e-1;   // 宽度
             kf_.measurementNoiseCov.at<float>(3, 3) = 1e-1;   // 高度
 
-            // 后验误差协方差 (P)
+            // 后验误差协方差
             setIdentity(kf_.errorCovPost, Scalar::all(1e-2));
 
             // 状态
@@ -59,7 +59,22 @@ namespace camera {
                                     static_cast<float>(measBox.y + measBox.height/2.0));
             Mat measurement = (Mat_<float>(4, 1) <<
                 center.x, center.y, measBox.width, measBox.height);
-            kf_.correct(measurement);
+            //Mat err = measurement - kf_.measurementMatrix * kf_.statePost;
+            //Mat mahalanobis = err.t() * kf_.errorCovPost.inv() * err;
+            // if (mahalanobis.at<float>(0) > 100.0) {
+            //     float originalWNoise = kf_.measurementNoiseCov.at<float>(2, 2);
+            //     float originalHNoise = kf_.measurementNoiseCov.at<float>(3, 3);
+            //     kf_.measurementNoiseCov.at<float>(2, 2) *= 10.0;
+            //     kf_.measurementNoiseCov.at<float>(3, 3) *= 10.0;
+            //
+            //     kf_.correct(measurement);
+            //
+            //     // 恢复原值
+            //     kf_.measurementNoiseCov.at<float>(2, 2) = originalWNoise;
+            //     kf_.measurementNoiseCov.at<float>(3, 3) = originalHNoise;
+            // } else {
+                kf_.correct(measurement);
+            //}
         }
 
         Rect get_state() {

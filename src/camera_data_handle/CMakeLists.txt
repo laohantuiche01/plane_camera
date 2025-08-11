@@ -44,17 +44,6 @@ function(add_and_install_executable target_name)
             DESTINATION lib/${PROJECT_NAME})
 endfunction()
 
-add_executable(linshi
-        src/linshi.cpp
-)
-ament_target_dependencies(
-        linshi
-        OpenCV
-)
-install(TARGETS
-        linshi
-        DESTINATION lib/${PROJECT_NAME})
-
 add_executable(receive_data
         src/receive_data.cpp
         src/Yolov8Detector.cpp

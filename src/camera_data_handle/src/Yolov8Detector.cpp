@@ -42,6 +42,7 @@ Yolov8::YOLOv8Detector::YOLOv8Detector(const string &modelPath, const vector<str
         }
 
         compiled_model_ = core_.compile_model(model, "CPU");
+
         infer_request_ = compiled_model_.create_infer_request();
     } catch (const std::exception &e) {
         std::cerr << "cannot initialize : " << e.what() << std::endl;

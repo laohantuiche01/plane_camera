@@ -19,6 +19,7 @@ ament_auto_find_build_dependencies()
 #endif ()
 
 #add_definitions(-DFPS_VISABLE_OPEN)
+#add_definitions(-D NO_IMAGE)
 add_definitions(-DDETECTION_OPENVINO_OPEN)
 add_definitions(-DKEY_POINT_TRACKING)
 add_definitions(-DPREDICT_OPEN)

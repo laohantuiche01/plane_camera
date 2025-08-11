@@ -74,8 +74,9 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         }
 #endif
 
+#ifndef NO_IMAGE
         std::vector<std::vector<double> > positions = detector_.drawDetections(image, detections);
-
+#endif
 
 #ifdef PREDICT_OPEN
         //卡尔曼滤波器接口
@@ -94,8 +95,12 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
                 Point2f predictCenter = tracker_->predict();
                 Rect estimatedBox = tracker_->get_state();
                 //RCLCPP_ERROR(this->get_logger(), "-----------------------------");
+
+#ifndef NO_IMAGE
                 circle(image, predictCenter, 5, Scalar(200, 0, 120), 2);
                 cv::rectangle(image, estimatedBox, Scalar(255, 0, 0), 2);
+#endif
+
             }
         } catch (cv::Exception e) {
             RCLCPP_WARN(this->get_logger(), "%s", e.what());
@@ -124,9 +129,11 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
                 position_pub_->publish(position_msg);
             }
         }
+#ifndef NO_IMAGE
         cv::circle(image, cv::Point(320, 240), 207, cv::Scalar(0, 255, 0), 1);
         cv::line(image, cv::Point(0, 240), cv::Point(640, 240), cv::Scalar(0, 255, 0), 1);
         cv::line(image, cv::Point(320, 0), cv::Point(320, 480), cv::Scalar(0, 255, 0), 1);
+#endif
 
 #ifdef FPS_VISABLE_OPEN
         //计算fps的
@@ -142,8 +149,10 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         }
 #endif
 
+#ifndef NO_IMAGE
         namedWindow("image", cv::WINDOW_NORMAL);
         cv::resizeWindow("image", 2000, 1500);
+#endif
 
 #ifdef FPS_VISABLE_OPEN
         fps_timer_.reset();
@@ -154,8 +163,11 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         }
 #endif
 
+#ifndef NO_IMAGE
         cv::imshow("image", image);
         cv::waitKey(1);
+#endif
+
     } catch (cv_bridge::Exception &e) {
         RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
     } catch (const std::exception &e) {

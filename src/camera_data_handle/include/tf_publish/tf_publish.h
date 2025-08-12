@@ -19,6 +19,9 @@ namespace camera {
     class TF_Publisher : public rclcpp::Node {
     public:
         TF_Publisher() : Node("TF_publish"), height(1.5), tf2_reflash(0), tf2_reflash_num(0) {
+
+            RCLCPP_INFO(this->get_logger(), "TF_Publisher");
+
             this->declare_parameter("height", 1.5);
             this->declare_parameter("tf2_reflash_num", 10);
 

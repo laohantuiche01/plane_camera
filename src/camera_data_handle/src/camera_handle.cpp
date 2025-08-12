@@ -106,7 +106,6 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
                 circle(image, predictCenter, 5, Scalar(200, 0, 120), 2);
                 cv::rectangle(image, estimatedBox, Scalar(255, 0, 0), 2);
 #endif
-
             }
         } catch (cv::Exception e) {
             RCLCPP_WARN(this->get_logger(), "%s", e.what());
@@ -120,6 +119,9 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         }
 
 #endif
+
+        RCLCPP_INFO(this->get_logger(), "Received Image %s",
+                    Yolov8::defaultClassNames[detections.front().classId].c_str());
 
         //信息发送变量
         std_msgs::msg::Float64MultiArray position_msg;
@@ -173,7 +175,6 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         cv::imshow("image", image);
         cv::waitKey(1);
 #endif
-
     } catch (cv_bridge::Exception &e) {
         RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
     } catch (const std::exception &e) {

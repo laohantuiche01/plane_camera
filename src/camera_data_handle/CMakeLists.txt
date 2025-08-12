@@ -19,10 +19,11 @@ ament_auto_find_build_dependencies()
 #endif ()
 
 #add_definitions(-DFPS_VISABLE_OPEN)
+#add_definitions(-DYOLOV8_DETECTOR_OFF)
 #add_definitions(-D NO_IMAGE)
 add_definitions(-DDETECTION_OPENVINO_OPEN)
-add_definitions(-DKEY_POINT_TRACKING)
-add_definitions(-DPREDICT_OPEN)
+#add_definitions(-DKEY_POINT_TRACKING)
+#add_definitions(-DPREDICT_OPEN)
 add_definitions(-DPROJECT_PATH=${CMAKE_CURRENT_SOURCE_DIR})
 
 function(add_and_install_executable target_name)

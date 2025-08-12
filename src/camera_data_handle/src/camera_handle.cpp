@@ -17,11 +17,11 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
     RCLCPP_INFO(this->get_logger(), "Receive Data");
     RCLCPP_INFO(this->get_logger(), MACRO_TO_STR(PROJECT_PATH)"/model/best.onnx");
 
-    this->declare_parameter("nms_threshold_", 0.4);
-    this->declare_parameter("confidence_threshold_", 0.5);
-
-    this->get_parameter("confidence_threshold_", confidence_threshold_);
-    this->get_parameter("nms_threshold_", nms_threshold_);
+    // this->declare_parameter("nms_threshold_", 0.4);
+    // this->declare_parameter("confidence_threshold_", 0.5);
+    //
+    // this->get_parameter("confidence_threshold_", confidence_threshold_);
+    // this->get_parameter("nms_threshold_", nms_threshold_);
 
     position_pub_ = this->create_publisher<std_msgs::msg::Float64MultiArray>(
         "/camera/target/position",
@@ -63,6 +63,8 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         cv::Mat image;
         cv::cvtColor(temp_image, image, cv::COLOR_BGR2RGB);
 
+
+#ifndef YOLOV8_DETECTOR_OFF
         //目标检测接口
         std::vector<Yolov8::Detection> detections = detector_.detect(image);
 #ifdef KEY_POINT_TRACKING
@@ -74,8 +76,12 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         }
 #endif
 
-#ifndef NO_IMAGE
         std::vector<std::vector<double> > positions = detector_.drawDetections(image, detections);
+#endif
+
+#ifdef YOLOV8_DETECTOR_OFF
+
+        std::vector<std::vector<double> > positions{};
 #endif
 
 #ifdef PREDICT_OPEN

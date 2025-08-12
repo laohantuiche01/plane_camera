@@ -1,5 +1,6 @@
 #include "../include/Yolov8Detector/Yolov8Detector.h"
 
+#include <iostream>
 #include <rclcpp/logging.hpp>
 #include <openvino/openvino.hpp>
 using namespace cv;
@@ -41,9 +42,14 @@ Yolov8::YOLOv8Detector::YOLOv8Detector(const string &modelPath, const vector<str
             std::cout << "Available device: " << device << std::endl;
         }
 
-        compiled_model_ = core_.compile_model(model, "CPU");
+        ov::AnyMap config ;
+        config["GPU_DISABLE_WINOGRAD_CONVOLUTION"] = "True";
+
+        compiled_model_ = core_.compile_model(model, "GPU", config);
+        //compiled_model_ = core_.compile_model(model, "GPU");
 
         infer_request_ = compiled_model_.create_infer_request();
+
     } catch (const std::exception &e) {
         std::cerr << "cannot initialize : " << e.what() << std::endl;
         throw;
@@ -53,6 +59,7 @@ Yolov8::YOLOv8Detector::YOLOv8Detector(const string &modelPath, const vector<str
 }
 
 vector<Yolov8::Detection> Yolov8::YOLOv8Detector::detect(Mat &image) {
+
     Mat blob = preprocess(image);
 #ifndef DETECTION_OPENVINO_OPEN
 
@@ -173,30 +180,33 @@ std::vector<std::vector<double> > Yolov8::YOLOv8Detector::drawDetections(
     Mat &image, const vector<Detection> &detections) {
     std::vector<std::vector<double> > position_container;
     for (const auto &detection: detections) {
-        rectangle(image, detection.box, Scalar(0, 255, 0), 2);
+        std::vector<double> position;
 
+#ifndef NO_IMAGE
+        rectangle(image, detection.box, Scalar(0, 255, 0), 2);
         string label = format("%s: %.2f", classNames_[detection.classId].c_str(), detection.confidence);
 
         int baseLine;
-        std::vector<double> position;
+
         Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
         Rect labelRect = Rect(detection.box.x, detection.box.y - labelSize.height - baseLine,
                               labelSize.width, labelSize.height + baseLine);
 
         rectangle(image, labelRect, Scalar(0, 255, 0), FILLED);
-
+#endif
 
         position.push_back(detection.box.x + detection.box.width / 2 - imgWidth_ / 2);
         position.push_back(imgHeight_ / 2 - detection.box.y - detection.box.height / 2);
 
         //std::cout << detection.box.x + detection.box.width / 2 - imgWidth / 2 << endl;
         //std::cout << imgHeight / 2 - detection.box.y - detection.box.height / 2 << endl;
-
+#ifndef NO_IMAGE
         circle(image, Point(detection.box.x + detection.box.width / 2, detection.box.y + detection.box.height / 2), 3,
                Scalar(0, 0, 255), FILLED);
 
         putText(image, label, Point(detection.box.x, detection.box.y - baseLine),
                 FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 0), 1);
+#endif
 
         position_container.push_back(position);
     }

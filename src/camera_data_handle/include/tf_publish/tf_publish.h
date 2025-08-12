@@ -60,20 +60,22 @@ namespace camera {
             z = height;
             std::cout << x << " " << y << " " << z << std::endl;
 #ifdef THE_TRANSFORM_USE_PREDICT
-            transform_.transform.translation.x = x * 0.01;
-            transform_.transform.translation.y = y * 0.01;
-            transform_.transform.translation.z = z * 0.01;
+            transform_.transform.translation.x = x * 42 / 20700;
+            transform_.transform.translation.y = y * 42 / 20700;
+            transform_.transform.translation.z = z;
+
+            RCLCPP_INFO(this->get_logger(), "x: %f, y: %f, z: %f", transform_.transform.translation.x,
+                        transform_.transform.translation.y, transform_.transform.translation.z);
 #endif
 
 #ifdef THE_TRANSFORM_USE_ACCELERATE
-            constexpr double param = 0 ;
+            constexpr double param = 0;
 
             transform_.transform.translation.x = 0;
             transform_.transform.translation.y = 0;
             transform_.transform.translation.z = 0;
 
 #endif
-
         }
 
         void publish_transform() {

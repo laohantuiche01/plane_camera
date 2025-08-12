@@ -1,7 +1,7 @@
 #include "../include/tf_publish/tf_publish.h"
 
 #ifdef DETECTION_OPENVINO_OPEN
-    #warning "DETECTION_OPENVINO_OPEN is defined"  // 编译时会显示此警告
+    #warning "DETECTION_OPENVINO_OPEN is defined"
 #else
     #warning "DETECTION_OPENVINO_OPEN is NOT defined"
 #endif

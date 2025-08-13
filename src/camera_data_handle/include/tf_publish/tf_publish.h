@@ -22,6 +22,7 @@ namespace camera {
 
             RCLCPP_INFO(this->get_logger(), "TF_Publisher");
 
+
             this->declare_parameter("height", 1.5);
             this->declare_parameter("tf2_reflash_num", 10);
 

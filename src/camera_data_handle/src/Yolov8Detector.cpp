@@ -8,13 +8,11 @@ using namespace dnn;
 using namespace std;
 
 
-
 Yolov8::YOLOv8Detector::YOLOv8Detector(const string &modelPath, const vector<string> &classNames, int imgSize,
                                        float confThreshold, float nmsThreshold)
     : classNames_(classNames), imgSize_(imgSize),
       confThreshold_(confThreshold), nmsThreshold_(nmsThreshold),
       imgHeight_(480), imgWidth_(640) {
-
 #ifndef DETECTION_OPENVINO_OPEN
     net_ = readNet(modelPath);
     net_.setPreferableBackend(DNN_BACKEND_OPENCV);
@@ -38,28 +36,25 @@ Yolov8::YOLOv8Detector::YOLOv8Detector(const string &modelPath, const vector<str
         inputShape[3] = imgSize_;
         model->reshape({inputShape});
 
-        for (const auto& device : core_.get_available_devices()) {
+        for (const auto &device: core_.get_available_devices()) {
             std::cout << "Available device: " << device << std::endl;
         }
 
-        ov::AnyMap config ;
+        ov::AnyMap config;
         config["GPU_DISABLE_WINOGRAD_CONVOLUTION"] = "True";
 
         compiled_model_ = core_.compile_model(model, "GPU", config);
         //compiled_model_ = core_.compile_model(model, "GPU");
 
         infer_request_ = compiled_model_.create_infer_request();
-
     } catch (const std::exception &e) {
         std::cerr << "cannot initialize : " << e.what() << std::endl;
         throw;
     }
 #endif
-
 }
 
 vector<Yolov8::Detection> Yolov8::YOLOv8Detector::detect(Mat &image) {
-
     Mat blob = preprocess(image);
 #ifndef DETECTION_OPENVINO_OPEN
 
@@ -88,9 +83,9 @@ vector<Yolov8::Detection> Yolov8::YOLOv8Detector::detect(Mat &image) {
     infer_request_.infer();
 
     std::vector<cv::Mat> outputs;
-    for (const auto &name : outputNames_) {
+    for (const auto &name: outputNames_) {
         ov::Tensor outputTensor = infer_request_.get_tensor(name);
-        const float* data = outputTensor.data<float>();
+        const float *data = outputTensor.data<float>();
         ov::Shape shape = outputTensor.get_shape();
 
         int rows = shape[1];
@@ -103,7 +98,6 @@ vector<Yolov8::Detection> Yolov8::YOLOv8Detector::detect(Mat &image) {
     return postprocess(outputs, image.size());
 
 #endif
-
 }
 
 Mat Yolov8::YOLOv8Detector::preprocess(const Mat &image) const {
@@ -195,8 +189,11 @@ std::vector<std::vector<double> > Yolov8::YOLOv8Detector::drawDetections(
         rectangle(image, labelRect, Scalar(0, 255, 0), FILLED);
 #endif
 
-        position.push_back(detection.box.x + detection.box.width / 2 - imgWidth_ / 2);
+        // position.push_back(detection.box.x + detection.box.width / 2 - imgWidth_ / 2);
+        // position.push_back(imgHeight_ / 2 - detection.box.y - detection.box.height / 2);
+
         position.push_back(imgHeight_ / 2 - detection.box.y - detection.box.height / 2);
+        position.push_back(imgWidth_ / 2 - detection.box.x - detection.box.width / 2);
 
         //std::cout << detection.box.x + detection.box.width / 2 - imgWidth / 2 << endl;
         //std::cout << imgHeight / 2 - detection.box.y - detection.box.height / 2 << endl;

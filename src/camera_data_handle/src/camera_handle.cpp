@@ -173,7 +173,7 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
 
 #ifndef NO_IMAGE
         cv::imshow("image", image);
-        cv::waitKey(1);
+        cv::waitKey(10);
 #endif
     } catch (cv_bridge::Exception &e) {
         RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());

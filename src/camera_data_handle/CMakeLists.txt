@@ -22,8 +22,9 @@ ament_auto_find_build_dependencies()
 #add_definitions(-D YOLOV8_DETECTOR_OFF)
 #add_definitions(-D NO_IMAGE)
 add_definitions(-D DETECTION_OPENVINO_OPEN)
-add_definitions(-D KEY_POINT_TRACKING)
-add_definitions(-D PREDICT_OPEN)
+#add_definitions(-D KEY_POINT_TRACKING)
+#add_definitions(-D PREDICT_OPEN)
+
 add_definitions(-D PROJECT_PATH=${CMAKE_CURRENT_SOURCE_DIR})
 
 function(add_and_install_executable target_name)

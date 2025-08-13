@@ -22,9 +22,8 @@ namespace camera {
 
             RCLCPP_INFO(this->get_logger(), "TF_Publisher");
 
-
             this->declare_parameter("height", 1.5);
-            this->declare_parameter("tf2_reflash_num", 10);
+            this->declare_parameter("tf2_reflash_num", 1);
 
             this->get_parameter("tf2_reflash_num", tf2_reflash_num);
             this->get_parameter("height", height);
@@ -62,7 +61,7 @@ namespace camera {
             x = msg->data[0];
             y = msg->data[1];
             z = height;
-            std::cout << x << " " << y << " " << z << std::endl;
+            //std::cout << x << " " << y << " " << z << std::endl;
 #ifdef THE_TRANSFORM_USE_PREDICT
             transform_.transform.translation.x = x * 42 / 20700;
             transform_.transform.translation.y = y * 42 / 20700;

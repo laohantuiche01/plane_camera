@@ -192,8 +192,8 @@ std::vector<std::vector<double> > Yolov8::YOLOv8Detector::drawDetections(
         // position.push_back(detection.box.x + detection.box.width / 2 - imgWidth_ / 2);
         // position.push_back(imgHeight_ / 2 - detection.box.y - detection.box.height / 2);
 
-        position.push_back(imgHeight_ / 2 - detection.box.y - detection.box.height / 2);
-        position.push_back(imgWidth_ / 2 - detection.box.x - detection.box.width / 2);
+        position.push_back(detection.box.x + detection.box.width / 2 - imgWidth_ / 2);
+        position.push_back(detection.box.y + detection.box.height / 2 - imgHeight_ / 2);
 
         //std::cout << detection.box.x + detection.box.width / 2 - imgWidth / 2 << endl;
         //std::cout << imgHeight / 2 - detection.box.y - detection.box.height / 2 << endl;

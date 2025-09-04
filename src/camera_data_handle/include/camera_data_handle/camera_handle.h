@@ -20,6 +20,7 @@ namespace camera {
         void imageCallback (sensor_msgs::msg::Image::ConstSharedPtr msg);
 
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription_;
+
         rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr position_pub_;
         rclcpp::TimerBase::SharedPtr timer_;
 

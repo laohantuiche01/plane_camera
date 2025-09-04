@@ -7,6 +7,7 @@ endif ()
 
 find_package(ament_cmake_auto REQUIRED)
 find_package(OpenVINO REQUIRED)
+find_package(OpenCL REQUIRED)
 ament_auto_find_build_dependencies()
 
 #option(IF_USE_OPENVINO "Detection use openvino" ON)
@@ -22,6 +23,7 @@ ament_auto_find_build_dependencies()
 #add_definitions(-D YOLOV8_DETECTOR_OFF)
 #add_definitions(-D NO_IMAGE)
 add_definitions(-D DETECTION_OPENVINO_OPEN)
+#add_definitions(-D RUN_THE_FUNCTION_BY_GPU)
 #add_definitions(-D KEY_POINT_TRACKING)
 #add_definitions(-D PREDICT_OPEN)
 
@@ -47,43 +49,43 @@ function(add_and_install_executable target_name)
             DESTINATION lib/${PROJECT_NAME})
 endfunction()
 
-add_executable(receive_data
-        src/receive_data.cpp
-        src/Yolov8Detector.cpp
-        src/camera_handle.cpp
-        src/point_tracking.cpp
+add_and_install_executable(mytry
+        SRCS    src/try.cpp
+        LIBS    OpenCL
 )
-ament_target_dependencies(
-        receive_data
-        rclcpp
-        OpenCV
-        cv_bridge
-        tf2
-        tf2_ros
-        tf2_geometry_msgs
-        yaml-cpp
 
+add_and_install_executable(camera_debug
+        SRCS    src/camera_debug/camera_debug.cpp
+        DEPS    rclcpp
+                OpenCV
+                cv_bridge
+                tf2
+                tf2_geometry_msgs
 )
-target_link_libraries(receive_data
-        openvino::runtime
-)
-install(TARGETS
-        receive_data
-        DESTINATION lib/${PROJECT_NAME})
 
-add_executable(tf_publish
-        src/tf_publisher.cpp
+add_and_install_executable(receive_data
+        SRCS    src/recieve_data/receive_data.cpp
+                src/recieve_data/Yolov8Detector.cpp
+                src/recieve_data/camera_handle.cpp
+                src/recieve_data/point_tracking.cpp
+        DEPS    rclcpp
+                OpenCV
+                cv_bridge
+                tf2
+                tf2_ros
+                tf2_geometry_msgs
+                yaml-cpp
+        LIBS    OpenCL
+                openvino::runtime
 )
-ament_target_dependencies(
-        tf_publish
-        rclcpp
-        tf2
-        tf2_ros
-        tf2_geometry_msgs
+
+add_and_install_executable(tf_publish
+        SRCS    src/tf_publish/tf_publisher.cpp
+        DEPS    rclcpp
+                tf2
+                tf2_ros
+                tf2_geometry_msgs
 )
-install(TARGETS
-        tf_publish
-        DESTINATION lib/${PROJECT_NAME})
 
 if (BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)

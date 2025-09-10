@@ -25,7 +25,7 @@ ament_auto_find_build_dependencies()
 add_definitions(-D DETECTION_OPENVINO_OPEN)
 #add_definitions(-D RUN_THE_FUNCTION_BY_GPU)
 #add_definitions(-D KEY_POINT_TRACKING)
-#add_definitions(-D PREDICT_OPEN)
+add_definitions(-D PREDICT_OPEN)
 
 add_definitions(-D PROJECT_PATH=${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -63,11 +63,25 @@ add_and_install_executable(camera_debug
                 tf2_geometry_msgs
 )
 
+add_and_install_executable(backup_debug
+        SRCS    src/recieve_data/detector_backup.cpp
+                src/backup_debug.cpp
+        DEPS    rclcpp
+                OpenCV
+                cv_bridge
+                tf2
+                tf2_ros
+                tf2_geometry_msgs
+        LIBS    OpenCL
+)
+
 add_and_install_executable(receive_data
         SRCS    src/recieve_data/receive_data.cpp
                 src/recieve_data/Yolov8Detector.cpp
                 src/recieve_data/camera_handle.cpp
                 src/recieve_data/point_tracking.cpp
+                src/recieve_data/detector_backup.cpp
+                src/recieve_data/target_predict.cpp
         DEPS    rclcpp
                 OpenCV
                 cv_bridge

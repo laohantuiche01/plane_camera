@@ -9,6 +9,7 @@
 
 #include "../Yolov8Detector/Yolov8Detector.h"
 #include "../kalman/kalmanbox.h"
+#include "target_predict.h"
 #include "../point_tracking/point_tracking.h"
 
 namespace camera {
@@ -26,6 +27,8 @@ namespace camera {
 
         std::vector<std::string> output_names_;
         std::vector<std::string> class_names_;
+
+        camera::TargetPredictFactory target_predict_factory_;
 
         camera::KalmanBoxTracker* tracker_{nullptr};
         int tracking_num_{0};

@@ -24,10 +24,10 @@ namespace camera {
                 0, 0, 0, 0, 0, 0, 1, 0,
                 0, 0, 0, 0, 0, 0, 0, 1);
 
-            // 测量矩阵
+            // 测量矩阵  测量噪声的方差
             setIdentity(kf_.measurementMatrix);
 
-            // 过程噪声协方差
+            // 过程噪声协方差  模型噪声协方差矩阵
             setIdentity(kf_.processNoiseCov, Scalar::all(1e-3));
 
             // 测量噪声协方差

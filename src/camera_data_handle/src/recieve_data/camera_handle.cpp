@@ -12,7 +12,6 @@
 #define MACRO_TO_STR(s) STR(s)
 
 camera::ReceiveData::ReceiveData() : Node("receive_data"),
-                                     target_predict_factory_(0.5),
                                      detector_(
                                          MACRO_TO_STR(PROJECT_PATH)"/model/best.onnx") {
     RCLCPP_INFO(this->get_logger(), "Receive Data");

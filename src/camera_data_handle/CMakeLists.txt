@@ -8,6 +8,7 @@ endif ()
 find_package(ament_cmake_auto REQUIRED)
 find_package(OpenVINO REQUIRED)
 find_package(OpenCL REQUIRED)
+find_package(rclcpp REQUIRED)
 ament_auto_find_build_dependencies()
 
 #option(IF_USE_OPENVINO "Detection use openvino" ON)
@@ -25,7 +26,7 @@ ament_auto_find_build_dependencies()
 add_definitions(-D DETECTION_OPENVINO_OPEN)
 #add_definitions(-D RUN_THE_FUNCTION_BY_GPU)
 #add_definitions(-D KEY_POINT_TRACKING)
-add_definitions(-D PREDICT_OPEN)
+#add_definitions(-D PREDICT_OPEN)
 
 add_definitions(-D PROJECT_PATH=${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -54,36 +55,36 @@ endfunction()
 #        LIBS    OpenCL
 #)
 
-add_and_install_executable(camera_debug
-        SRCS    src/camera_debug/camera_debug.cpp
-        DEPS    rclcpp
-                OpenCV
-                cv_bridge
-                tf2
-                tf2_geometry_msgs
-)
+#add_and_install_executable(camera_debug
+#        SRCS    src/camera_debug/camera_debug.cpp
+ #       DEPS    rclcpp
+ #               OpenCV
+  #              cv_bridge
+ #               tf2
+ #               tf2_geometry_msgs
+#)
 
-add_and_install_executable(backup_debug
-        SRCS    src/recieve_data/detector_backup.cpp
-                src/backup_debug.cpp
-        DEPS    rclcpp
-                OpenCV
-                cv_bridge
-                tf2
-                tf2_ros
-                tf2_geometry_msgs
-        LIBS    OpenCL
-)
+#add_and_install_executable(backup_debug
+#        SRCS    src/recieve_data/detector_backup.cpp
+#                src/backup_debug.cpp
+#        DEPS    rclcpp
+#                OpenCV
+#                cv_bridge
+#                tf2
+#                tf2_ros
+#                tf2_geometry_msgs
+#        LIBS    OpenCL
+#)
 
-add_and_install_executable(predict_debug
-        SRCS    src/camera_debug/predict_debug.cpp
-        DEPS    rclcpp
-                OpenCV
-                cv_bridge
-                tf2
-                tf2_ros
-                tf2_geometry_msgs
-)
+#add_and_install_executable(predict_debug
+#        SRCS    src/camera_debug/predict_debug.cpp
+ #       DEPS    rclcpp
+ #               OpenCV
+#                cv_bridge
+#                tf2
+#                tf2_ros
+ #               tf2_geometry_msgs
+#)
 
 add_and_install_executable(receive_data
         SRCS    src/recieve_data/receive_data.cpp
@@ -91,7 +92,7 @@ add_and_install_executable(receive_data
                 src/recieve_data/camera_handle.cpp
                 src/recieve_data/point_tracking.cpp
                 src/recieve_data/detector_backup.cpp
-                src/recieve_data/target_predict.cpp
+                #src/recieve_data/target_predict.cpp
         DEPS    rclcpp
                 OpenCV
                 cv_bridge

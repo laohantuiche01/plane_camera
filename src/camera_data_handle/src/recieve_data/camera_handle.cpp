@@ -17,6 +17,15 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
     RCLCPP_INFO(this->get_logger(), "Receive Data");
     RCLCPP_INFO(this->get_logger(), MACRO_TO_STR(PROJECT_PATH)"/model/best.onnx");
 
+#ifdef VIDEO_WRITE
+    writer_.open(video_name_,
+                    cv::VideoWriter::fourcc ('M', 'J', 'P', 'G'),
+                    10.0,
+                    Size (640,480),
+                    true
+        );
+#endif
+
     // this->declare_parameter("nms_threshold_", 0.4);
     // this->declare_parameter("confidence_threshold_", 0.5);
     //
@@ -63,6 +72,9 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         cv::Mat image;
         cv::cvtColor(temp_image, image, cv::COLOR_BGR2RGB);
 
+#ifdef VIDEO_WRITE
+        writer_.write(image);
+#endif
 
 #ifndef YOLOV8_DETECTOR_OFF
         //目标检测接口

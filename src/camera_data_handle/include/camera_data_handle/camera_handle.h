@@ -6,6 +6,7 @@
 #include "opencv4/opencv2/opencv.hpp"
 #include "cv_bridge/cv_bridge.h"
 #include "std_msgs/msg/float64_multi_array.hpp"
+#include "opencv2/videoio.hpp"
 
 #include "../Yolov8Detector/Yolov8Detector.h"
 #include "../kalman/kalmanbox.h"
@@ -17,8 +18,10 @@ namespace camera {
     public:
         explicit ReceiveData();
 
+
+
     private:
-        void imageCallback (sensor_msgs::msg::Image::ConstSharedPtr msg);
+        void imageCallback(sensor_msgs::msg::Image::ConstSharedPtr msg);
 
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription_;
 
@@ -30,7 +33,7 @@ namespace camera {
 
         //camera::TargetPredictFactory target_predict_factory_;
 
-        camera::KalmanBoxTracker* tracker_{nullptr};
+        camera::KalmanBoxTracker *tracker_{nullptr};
         int tracking_num_{0};
 
         //如果检测或者跟踪都失效时设置为false
@@ -48,6 +51,15 @@ namespace camera {
         Yolov8::YOLOv8Tracker detector_;
 #endif
 
+#ifdef  VIDEO_WRITE
+        int frameWidth_ = 640;
+        int frameHeight_ = 480;
+
+        const string video_name_ = "output.avi";
+
+        cv::VideoWriter writer_;
+
+#endif
         double confidence_threshold_{0.0};
         double nms_threshold_{0.0};
         bool has_received_{false};
@@ -55,7 +67,6 @@ namespace camera {
         cv::TickMeter fps_timer_;
         double fps_time_sum_{0.0};
         int fps_sum_{0};
-
     };
 }
 

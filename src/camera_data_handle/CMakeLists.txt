@@ -20,6 +20,7 @@ ament_auto_find_build_dependencies()
 #    message(STATUS "OpenVINO support unabled-----------------------!!!!!!!!!!")
 #endif ()
 
+add_definitions(-D VIDEO_WRITE)
 #add_definitions(-D FPS_VISABLE_OPEN)
 #add_definitions(-D YOLOV8_DETECTOR_OFF)
 #add_definitions(-D NO_IMAGE)

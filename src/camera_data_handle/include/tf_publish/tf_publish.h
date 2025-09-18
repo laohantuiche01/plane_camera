@@ -13,107 +13,58 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include "tf2_ros/transform_broadcaster.h"
+#include "../receive_openmv_data/receive_openmv_data.h"
 
 
 namespace camera {
     class TF_Publisher : public rclcpp::Node {
     public:
-        TF_Publisher() : Node("TF_publish"), height(1.5), tf2_reflash(0), tf2_reflash_num(0) {
-
-            RCLCPP_INFO(this->get_logger(), "TF_Publisher");
-
-            this->declare_parameter("height", 1.5);
-            this->declare_parameter("tf2_reflash_num", 1);
-
-            this->get_parameter("tf2_reflash_num", tf2_reflash_num);
-            this->get_parameter("height", height);
-
-            tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
-            position_subscription = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-                "/camera/target/position",
-                10,
-                std::bind(&TF_Publisher::position_callback, this, std::placeholders::_1)
-            );
-
-            send_timer_ = this->create_wall_timer(
-                std::chrono::milliseconds(10),
-                std::bind(&TF_Publisher::publish_transform, this));
-        }
+        TF_Publisher();
 
     private:
-        void position_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
-            //std::cout<<tf2_reflash_num<<std::endl;
-            if (msg.get()->data.empty()) //处理为空的情况
-            {
-                tf2_reflash++;
-                if (tf2_reflash >= tf2_reflash_num) {
-                    transform_.transform.translation.x = 0;
-                    transform_.transform.translation.y = 0;
-                    transform_.transform.translation.z = 0;
-                    tf2_reflash = 0;
-                }
-                return;
-            }
+        void position_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
 
-            tf2_reflash = 0; // 更新
+        void publish_transform();
 
-            double x, y, z;
-            x = msg->data[0];
-            y = msg->data[1];
-            z = height;
-            //std::cout << x << " " << y << " " << z << std::endl;
-#ifdef THE_TRANSFORM_USE_PREDICT
-            transform_.transform.translation.x = x * 42 / 20700;
-            transform_.transform.translation.y = y * 42 / 20700;
-            transform_.transform.translation.z = z;
+        void initialize_transform(geometry_msgs::msg::TransformStamped &msg_loader, const std::string &header_id,
+                                  const std::string &child_id);
 
-            RCLCPP_INFO(this->get_logger(), "x: %f, y: %f, z: %f", transform_.transform.translation.x,
-                        transform_.transform.translation.y, transform_.transform.translation.z);
-#endif
+        //图像解算的类
+        std::shared_ptr<CalculateTarget> calculate_target_class_;
 
-#ifdef THE_TRANSFORM_USE_ACCELERATE
-            constexpr double param = 0;
+        //接受高度信息
 
-            transform_.transform.translation.x = 0;
-            transform_.transform.translation.y = 0;
-            transform_.transform.translation.z = 0;
-
-#endif
-        }
-
-        void publish_transform() {
-            if (!transform_initialized) {
-                initialize_transform();
-                transform_initialized = true;
-            }
-
-            transform_.header.stamp = this->get_clock()->now();
-            tf_broadcaster->sendTransform(transform_);
-        }
-
-        void initialize_transform() {
-            transform_.header.frame_id = "camera_color_frame";
-            transform_.child_frame_id = "target_position";
-            transform_.transform.translation.x = 0;
-            transform_.transform.translation.y = 0;
-            transform_.transform.translation.z = 0;
-
-            transform_.transform.rotation.x = 0;
-            transform_.transform.rotation.y = 0;
-            transform_.transform.rotation.z = 0;
-            transform_.transform.rotation.w = 1;
-        }
-
+        //接受识别的图像信息
         rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr position_subscription;
+
+        //隔断时间
         rclcpp::TimerBase::SharedPtr send_timer_;
-        std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
+
+        //识别坐标的tf广播器
+        std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+
+        //猜测大概目标的tf广播器
+        std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_guess_;
+
+        //发送的信息(这个是具体的识别信息)
         geometry_msgs::msg::TransformStamped transform_;
+
+        //openmv的信息
+        geometry_msgs::msg::TransformStamped transform_openmv_;
+
         bool transform_initialized = false;
 
-        long tf2_reflash;
-        int tf2_reflash_num;
+        //更新计数器（有时候丢失目标，能够延时）
+        long tf2_reflash_;
 
-        double height;
+        //最大更新次数
+        int tf2_reflash_num_;
+
+        //测试用的高度
+        double height_;
+
+        //接收到的高度
+        double receive_height_{0};
     };
 }
 

@@ -51,10 +51,10 @@ function(add_and_install_executable target_name)
             DESTINATION lib/${PROJECT_NAME})
 endfunction()
 
-#add_and_install_executable(mytry
-#        SRCS    src/try.cpp
-#        LIBS    OpenCL
-#)
+add_and_install_executable(mytry
+        SRCS    src/try.cpp
+        LIBS    OpenCL
+)
 
 #add_and_install_executable(camera_debug
 #        SRCS    src/camera_debug/camera_debug.cpp
@@ -87,6 +87,7 @@ endfunction()
  #               tf2_geometry_msgs
 #)
 
+
 add_and_install_executable(receive_data
         SRCS    src/recieve_data/receive_data.cpp
                 src/recieve_data/Yolov8Detector.cpp
@@ -107,10 +108,18 @@ add_and_install_executable(receive_data
 
 add_and_install_executable(tf_publish
         SRCS    src/tf_publish/tf_publisher.cpp
+                src/receive_openmv_data/receive_openmv_data.cpp
         DEPS    rclcpp
                 tf2
                 tf2_ros
                 tf2_geometry_msgs
+)
+
+add_and_install_executable(receive_openmv_data
+        SRCS    src/receive_openmv_data/receive_openmv_data.cpp
+        DEPS    rclcpp
+                OpenCV
+
 )
 
 if (BUILD_TESTING)

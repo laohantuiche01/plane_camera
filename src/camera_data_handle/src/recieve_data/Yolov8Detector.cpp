@@ -126,8 +126,8 @@ Yolov8::YOLOv8Detector::YOLOv8Detector(const string &modelPath, const vector<str
         ov::AnyMap config;
         config["GPU_DISABLE_WINOGRAD_CONVOLUTION"] = "True";
 
-        compiled_model_ = core_.compile_model(model, "GPU", config);
-        //compiled_model_ = core_.compile_model(model, "CPU");
+        //compiled_model_ = core_.compile_model(model, "GPU", config);
+        compiled_model_ = core_.compile_model(model, "CPU");
 
         infer_request_ = compiled_model_.create_infer_request();
     } catch (const std::exception &e) {

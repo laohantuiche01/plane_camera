@@ -34,7 +34,7 @@ void camera::TF_Publisher_Base::initialize_transform(geometry_msgs::msg::Transfo
 }
 
 ///继承的目标检测的类
-///---------------------------------------------------------------------------------
+///---------------------------------------------------------------------------------------------------------------------
 camera::Detect_Publisher::Detect_Publisher() : Node("Detect_Publisher"), tf2_reflash_(0), tf2_reflash_num_(0) {
     RCLCPP_INFO(this->get_logger(), "TF_Publisher");
 
@@ -43,7 +43,6 @@ camera::Detect_Publisher::Detect_Publisher() : Node("Detect_Publisher"), tf2_ref
 
     this->get_parameter("tf2_reflash_num", tf2_reflash_num_);
     this->get_parameter("height", height_);
-
 
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
@@ -57,7 +56,6 @@ camera::Detect_Publisher::Detect_Publisher() : Node("Detect_Publisher"), tf2_ref
         std::chrono::milliseconds(10),
         std::bind(&Detect_Publisher::publish_transform, this));
 }
-
 
 void camera::Detect_Publisher::position_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
     //std::cout<<tf2_reflash_num<<std::endl;
@@ -112,7 +110,7 @@ void camera::Detect_Publisher::publish_transform() {
 }
 
 ///继承的猜测openmv的类
-///-------------------------------------------------------------------------------------
+///---------------------------------------------------------------------------------------------------------------------
 camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher") {
     RCLCPP_INFO(this->get_logger(), "TF_Publisher");
 

@@ -118,8 +118,8 @@ add_and_install_executable(detect_publish
 
 add_and_install_executable(calculate_publish
         SRCS    src/tf_publish/tf_publisher.cpp
-        src/receive_openmv_data/receive_openmv_data.cpp
-        src/tf_publish/calculate_publish.cpp
+                src/receive_openmv_data/receive_openmv_data.cpp
+                src/tf_publish/calculate_publish.cpp
         DEPS    rclcpp
         tf2
         tf2_ros

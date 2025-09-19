@@ -13,7 +13,7 @@ ReceiveOpenMVData::ReceiveOpenMVData(const std::string port,
 }
 
 std::string ReceiveOpenMVData::Receive_Openmv_Data() {
-    int fd = openSerialPort(port_, baudRate_);
+    int fd = openSerialPort(port_, baudRate_);;
 
     int num = 0;
 
@@ -21,8 +21,8 @@ std::string ReceiveOpenMVData::Receive_Openmv_Data() {
         while (true) {
             std::string line = readLine(fd);
 
-            uint8_t byte_data;
-            ssize_t n = read(fd, &byte_data, 1);
+            //uint8_t byte_data;
+            //ssize_t n = read(fd, &byte_data, 1);
 
             // if (n > 0) {
             //     std::cout << "收到字节: 0x" << std::hex << static_cast<int>(byte_data) << std::dec << std::endl;
@@ -37,10 +37,11 @@ std::string ReceiveOpenMVData::Receive_Openmv_Data() {
 
             if (!line.empty()) {
                 std::cout << "收到信息: " << line << std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 return line;
             }
             //num++;
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     } catch (const std::exception &e) {
         std::cerr << "发生错误: " << e.what() << std::endl;
@@ -70,6 +71,7 @@ int ReceiveOpenMVData::openSerialPort(const std::string &port, speed_t baudRate)
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             continue;
         }
+        int i = 0;
         break;
     }
 
@@ -201,9 +203,3 @@ cv::Point2d CalculateTarget::Handle_Openmv_Data() {
     }
     return {0, 0};
 }
-
-// int main() {
-//     CalculateTarget calculate_target;
-//     calculate_target.Handle_Openmv_Data();
-//     return 0;
-// }

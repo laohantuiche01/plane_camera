@@ -17,6 +17,36 @@
 
 
 namespace camera {
+
+    class TF_Publisher_Base {
+    public:
+        TF_Publisher_Base();
+
+        virtual ~TF_Publisher_Base();
+
+    private:
+
+        virtual void publish_transform();
+
+        void initialize_transform(geometry_msgs::msg::TransformStamped &msg_loader, const std::string &header_id,
+                                  const std::string &child_id);
+
+        //隔断时间
+        rclcpp::TimerBase::SharedPtr send_timer_;
+
+        //识别坐标的tf广播器
+        std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+
+        //发送的信息(这个是具体的识别信息)
+        geometry_msgs::msg::TransformStamped transform_;
+
+        bool transform_initialized = false;
+
+    };
+
+
+
+
     class TF_Publisher : public rclcpp::Node {
     public:
         TF_Publisher();

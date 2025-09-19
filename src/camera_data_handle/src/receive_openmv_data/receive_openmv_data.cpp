@@ -6,7 +6,7 @@
 #define IMAGE_HEIGHT 240
 
 const double HORIZONTAL_FOV = 60.0 * M_PI / 180.0;
-const double VERTICAL_FOV = HORIZONTAL_FOV * (IMAGE_HEIGHT / (double)IMAGE_WIDTH);
+const double VERTICAL_FOV = HORIZONTAL_FOV * (IMAGE_HEIGHT / (double) IMAGE_WIDTH);
 
 ReceiveOpenMVData::ReceiveOpenMVData(const std::string port,
                                      const speed_t baudRate) : port_(port), baudRate_(baudRate) {
@@ -56,7 +56,7 @@ std::string ReceiveOpenMVData::Receive_Openmv_Data() {
 
 int ReceiveOpenMVData::openSerialPort(const std::string &port, speed_t baudRate) {
     struct termios tty;
-    int fd{0} ;
+    int fd{0};
     while (true) {
         fd = open(port.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
         if (fd == -1) {
@@ -166,14 +166,14 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point, d
     cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
 
     //计算垂直方向像素偏移比例 (-1到1之间)
-    double vertical_ratio = (image_point.y - image_center.y) / (double)(IMAGE_HEIGHT / 2);
+    double vertical_ratio = (image_point.y - image_center.y) / (double) (IMAGE_HEIGHT / 2);
 
     //距离=中心距离/cos(垂直角度)
     double vertical_angle = vertical_ratio * (VERTICAL_FOV / 2.0);
     double distance = height / cos(vertical_angle);
 
     //计算水平方向像素偏移比例
-    double horizontal_ratio = (image_point.x - image_center.x) / (double)(IMAGE_WIDTH / 2);
+    double horizontal_ratio = (image_point.x - image_center.x) / (double) (IMAGE_WIDTH / 2);
 
     double horizontal_angle = horizontal_ratio * (HORIZONTAL_FOV / 2.0);
 
@@ -181,7 +181,7 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point, d
     double x = distance * sin(horizontal_angle);
     double y = distance * sin(vertical_angle);
 
-    return cv::Point2f(static_cast<float>(x), static_cast<float>(y));
+    return {x, y};
 }
 
 cv::Point2d CalculateTarget::Handle_Openmv_Data() {

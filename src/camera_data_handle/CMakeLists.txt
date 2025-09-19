@@ -106,14 +106,26 @@ add_and_install_executable(receive_data
                 openvino::runtime
 )
 
-add_and_install_executable(tf_publish
+add_and_install_executable(detect_publish
         SRCS    src/tf_publish/tf_publisher.cpp
                 src/receive_openmv_data/receive_openmv_data.cpp
+                src/tf_publish/detect_publish.cpp
         DEPS    rclcpp
                 tf2
                 tf2_ros
                 tf2_geometry_msgs
 )
+
+add_and_install_executable(calculate_publish
+        SRCS    src/tf_publish/tf_publisher.cpp
+        src/receive_openmv_data/receive_openmv_data.cpp
+        src/tf_publish/calculate_publish.cpp
+        DEPS    rclcpp
+        tf2
+        tf2_ros
+        tf2_geometry_msgs
+)
+
 
 #add_and_install_executable(receive_openmv_data
 #        SRCS    src/receive_openmv_data/receive_openmv_data.cpp

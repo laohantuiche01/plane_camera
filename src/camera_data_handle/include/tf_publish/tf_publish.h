@@ -17,15 +17,13 @@
 
 
 namespace camera {
-
     class TF_Publisher_Base {
     public:
+        virtual ~TF_Publisher_Base() = default;
+
         TF_Publisher_Base();
 
-        virtual ~TF_Publisher_Base();
-
-    private:
-
+    protected:
         virtual void publish_transform();
 
         void initialize_transform(geometry_msgs::msg::TransformStamped &msg_loader, const std::string &header_id,
@@ -40,62 +38,53 @@ namespace camera {
         //发送的信息(这个是具体的识别信息)
         geometry_msgs::msg::TransformStamped transform_;
 
-        bool transform_initialized = false;
+        bool transform_initialized;
 
+        //测试用的高度
+        double height_;
+
+        //接收到的高度
+        double receive_height_;
     };
 
-
-
-
-    class TF_Publisher : public rclcpp::Node {
+    ///继承的目标检测的类
+    class Detect_Publisher : public TF_Publisher_Base, public rclcpp::Node {
     public:
-        TF_Publisher();
+        Detect_Publisher();
+
+        ~Detect_Publisher() = default;
 
     private:
+        void publish_transform() override;
+
         void position_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
 
-        void publish_transform();
-
-        void initialize_transform(geometry_msgs::msg::TransformStamped &msg_loader, const std::string &header_id,
-                                  const std::string &child_id);
-
-        //图像解算的类
-        std::shared_ptr<CalculateTarget> calculate_target_class_;
-
-        //接受高度信息
-
-        //接受识别的图像信息
+        //接受点的信息
         rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr position_subscription;
-
-        //隔断时间
-        rclcpp::TimerBase::SharedPtr send_timer_;
-
-        //识别坐标的tf广播器
-        std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
-
-        //猜测大概目标的tf广播器
-        std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_guess_;
-
-        //发送的信息(这个是具体的识别信息)
-        geometry_msgs::msg::TransformStamped transform_;
-
-        //openmv的信息
-        geometry_msgs::msg::TransformStamped transform_openmv_;
-
-        bool transform_initialized = false;
 
         //更新计数器（有时候丢失目标，能够延时）
         long tf2_reflash_;
 
         //最大更新次数
         int tf2_reflash_num_;
-
-        //测试用的高度
-        double height_;
-
-        //接收到的高度
-        double receive_height_{0};
     };
+
+    ///继承的猜测openmv的类
+    class Calculate_Publisher : public TF_Publisher_Base, public rclcpp::Node {
+    public:
+        Calculate_Publisher();
+
+        ~Calculate_Publisher() = default;
+
+    private:
+
+        void publish_transform() override;
+
+        std::shared_ptr<CalculateTarget> calculate_target_class_;
+        //openmv的信息
+        geometry_msgs::msg::TransformStamped transform_openmv_;
+    };
+
 }
 
 

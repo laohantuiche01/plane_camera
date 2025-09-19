@@ -2,20 +2,23 @@
 
 #define OPENMV_NULL_ERROR 321
 
+#define IMAGE_WIDTH 320
+#define IMAGE_HEIGHT 240
+
+const double HORIZONTAL_FOV = 60.0 * M_PI / 180.0;
+const double VERTICAL_FOV = HORIZONTAL_FOV * (IMAGE_HEIGHT / (double)IMAGE_WIDTH);
+
 ReceiveOpenMVData::ReceiveOpenMVData(const std::string port,
                                      const speed_t baudRate) : port_(port), baudRate_(baudRate) {
 }
 
 std::string ReceiveOpenMVData::Receive_Openmv_Data() {
     int fd = openSerialPort(port_, baudRate_);
-    if (fd == -1) {
-        return "1";
-    }
 
     int num = 0;
 
     try {
-        while (num < 5) {
+        while (true) {
             std::string line = readLine(fd);
 
             uint8_t byte_data;
@@ -36,7 +39,7 @@ std::string ReceiveOpenMVData::Receive_Openmv_Data() {
                 std::cout << "收到信息: " << line << std::endl;
                 return line;
             }
-            num++;
+            //num++;
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     } catch (const std::exception &e) {
@@ -52,17 +55,22 @@ std::string ReceiveOpenMVData::Receive_Openmv_Data() {
 }
 
 int ReceiveOpenMVData::openSerialPort(const std::string &port, speed_t baudRate) {
-    int fd = open(port.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
-    if (fd == -1) {
-        std::cerr << "无法打开串口: " << port << std::endl;
-        return -1;
-    }
-
     struct termios tty;
-    if (tcgetattr(fd, &tty) == -1) {
-        std::cerr << "无法获取串口属性" << std::endl;
-        close(fd);
-        return -1;
+    int fd{0} ;
+    while (true) {
+        fd = open(port.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
+        if (fd == -1) {
+            std::cerr << "无法打开串口: " << port << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            continue;
+        }
+        if (tcgetattr(fd, &tty) == -1) {
+            std::cerr << "无法获取串口属性" << std::endl;
+            close(fd);
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            continue;
+        }
+        break;
     }
 
     //配置输入输出波特率
@@ -135,14 +143,45 @@ cv::Point2d CalculateTarget::Decode_Openmv_Data(std::string &input_str) {
 }
 
 cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point, double height) {
-    double the_camera_center = 0.05;
+    // double the_camera_center = 0.05; //焦点距离影响平面的距离
+    // double the_camera_length = 0.05; //相机下边界长度
+    // double real_x{0} ; //实际的x
+    // double real_y{0} ; //实际的y
+    // double theta_below{0}; //下边界角度
+    // double theta_above{0}; //上边界角度
+    // double length_below{0};
+    // double length_above{0};
+    //
+    // length_below = the_camera_length*(the_camera_center+height)/(sin(theta_below)*the_camera_center);
+    // length_above = the_camera_length*(the_camera_center+height)/(sin(theta_above)*the_camera_center);
+    //
+    // // 把相机高度转化成焦点高度 （这个比例要调the_camera_center）
+    // double height_center = height + the_camera_center;
+    // cv::Point2d image_point_c = cv::Point2d(image_point.x - 160, image_point.y - 120);
+    //
+    // real_x = image_point_c.x * height_center / 100;
+    // real_y = (1 + image_point_c.y / 100) * height_center;
+    //
+    // return {real_x, real_y};
+    cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
 
-    double height_center = height + the_camera_center; // 把相机高度转化成焦点高度 （这个比例要调the_camera_center）
-    cv::Point2d image_point_c = cv::Point2d(image_point.x - 160, image_point.y - 120);
+    //计算垂直方向像素偏移比例 (-1到1之间)
+    double vertical_ratio = (image_point.y - image_center.y) / (double)(IMAGE_HEIGHT / 2);
 
-    double real_x = image_point_c.x * height_center / 100;
-    double real_y = (1 + image_point_c.y / 100) * height_center;
-    return {real_x, real_y};
+    //距离=中心距离/cos(垂直角度)
+    double vertical_angle = vertical_ratio * (VERTICAL_FOV / 2.0);
+    double distance = height / cos(vertical_angle);
+
+    //计算水平方向像素偏移比例
+    double horizontal_ratio = (image_point.x - image_center.x) / (double)(IMAGE_WIDTH / 2);
+
+    double horizontal_angle = horizontal_ratio * (HORIZONTAL_FOV / 2.0);
+
+    //计算实际x,y坐标
+    double x = distance * sin(horizontal_angle);
+    double y = distance * sin(vertical_angle);
+
+    return cv::Point2f(static_cast<float>(x), static_cast<float>(y));
 }
 
 cv::Point2d CalculateTarget::Handle_Openmv_Data() {

@@ -115,12 +115,12 @@ add_and_install_executable(tf_publish
                 tf2_geometry_msgs
 )
 
-add_and_install_executable(receive_openmv_data
-        SRCS    src/receive_openmv_data/receive_openmv_data.cpp
-        DEPS    rclcpp
-                OpenCV
+#add_and_install_executable(receive_openmv_data
+#        SRCS    src/receive_openmv_data/receive_openmv_data.cpp
+#        DEPS    rclcpp
+#                OpenCV
 
-)
+#)
 
 if (BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)

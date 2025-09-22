@@ -5,6 +5,9 @@
 #define IMAGE_WIDTH 320
 #define IMAGE_HEIGHT 240
 
+#define INPUT_ANGLE(s) ((s)*M_PI/180)
+
+const double HORIZONTAL_ANGLE = 60.0;
 const double HORIZONTAL_FOV = 60.0 * M_PI / 180.0;
 const double VERTICAL_FOV = HORIZONTAL_FOV * (IMAGE_HEIGHT / (double) IMAGE_WIDTH);
 
@@ -21,8 +24,8 @@ std::string ReceiveOpenMVData::Receive_Openmv_Data() {
         while (true) {
             std::string line = readLine(fd);
 
-            //uint8_t byte_data;
-            //ssize_t n = read(fd, &byte_data, 1);
+            uint8_t byte_data;
+            ssize_t n = read(fd, &byte_data, 1);
 
             // if (n > 0) {
             //     std::cout << "收到字节: 0x" << std::hex << static_cast<int>(byte_data) << std::dec << std::endl;
@@ -57,55 +60,85 @@ std::string ReceiveOpenMVData::Receive_Openmv_Data() {
 
 int ReceiveOpenMVData::openSerialPort(const std::string &port, speed_t baudRate) {
     struct termios tty;
-    int fd{0};
-    while (true) {
-        fd = open(port.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
+    int fd = -1;
+    int retryCount = 0;
+    const int maxRetries = 10;
+
+    while (retryCount < maxRetries) {
+        fd = open(port.c_str(), O_RDWR | O_NOCTTY);
         if (fd == -1) {
-            std::cerr << "无法打开串口: " << port << std::endl;
+            std::cerr << "无法打开串口: " << port << "，错误: " << strerror(errno) << std::endl;
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            retryCount++;
             continue;
         }
-        if (tcgetattr(fd, &tty) == -1) {
-            std::cerr << "无法获取串口属性" << std::endl;
+
+        if (!isatty(fd)) {
+            std::cerr << port << " 不是一个终端设备" << std::endl;
             close(fd);
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            retryCount++;
             continue;
         }
-        int i = 0;
+
+        if (tcgetattr(fd, &tty) == -1) {
+            std::cerr << "无法获取串口属性，错误: " << strerror(errno) << std::endl;
+            close(fd);
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            retryCount++;
+            continue;
+        }
+
         break;
     }
 
-    //配置输入输出波特率
-    cfsetospeed(&tty, baudRate);
-    cfsetispeed(&tty, baudRate);
+    if (fd == -1 || retryCount >= maxRetries) {
+        std::cerr << "达到最大重试次数，无法打开串口" << std::endl;
+        return -1;
+    }
 
-    tty.c_cflag &= ~PARENB; //禁用奇偶校验
-    tty.c_cflag &= ~CSTOPB; //1停止位
-    tty.c_cflag &= ~CSIZE; //清除数据位设置
-    tty.c_cflag |= CS8; //8位数据位
+    memset(&tty, 0, sizeof(tty));
 
-    //禁用硬件流控制
+    if (cfsetospeed(&tty, baudRate) == -1 || cfsetispeed(&tty, baudRate) == -1) {
+        std::cerr << "无法设置波特率，错误: " << strerror(errno) << std::endl;
+        close(fd);
+        return -1;
+    }
+
+    tty.c_cflag &= ~PARENB; // 禁用奇偶校验
+    tty.c_cflag &= ~CSTOPB; // 1停止位
+    tty.c_cflag &= ~CSIZE; // 清除数据位设置
+    tty.c_cflag |= CS8; // 8位数据位
+
+    // 禁用硬件流控制
     tty.c_cflag &= ~CRTSCTS;
 
-    //启用接收器，设置本地模式
+    // 启用接收器，设置本地模式
     tty.c_cflag |= (CLOCAL | CREAD);
 
-    //禁用软件流控制
+    // 禁用软件流控制
     tty.c_iflag &= ~(IXON | IXOFF | IXANY);
 
-    //设置原始输入模式
+    // 禁用输入处理（不转换回车换行等）
+    tty.c_iflag &= ~(ICRNL | INLCR | IGNCR);
+
+    // 设置原始输入模式
     tty.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 
-    //设置原始输出模式
+    // 设置原始输出模式
     tty.c_oflag &= ~OPOST;
+    tty.c_oflag &= ~(ONLCR | OCRNL);
 
-    //设置超时
-    tty.c_cc[VTIME] = 10; //1秒超时
-    tty.c_cc[VMIN] = 0;
+    // 调整超时设置 - 等待至少1个字符，超时1秒
+    tty.c_cc[VTIME] = 10; // 1秒超时 (10 * 0.1秒)
+    tty.c_cc[VMIN] = 1; // 至少读取1个字符
 
-    //应用配置
+    // 清空输入输出缓冲区
+    tcflush(fd, TCIFLUSH);
+
+    // 应用配置
     if (tcsetattr(fd, TCSANOW, &tty) == -1) {
-        std::cerr << "无法设置串口属性" << std::endl;
+        std::cerr << "无法设置串口属性，错误: " << strerror(errno) << std::endl;
         close(fd);
         return -1;
     }
@@ -113,17 +146,39 @@ int ReceiveOpenMVData::openSerialPort(const std::string &port, speed_t baudRate)
     return fd;
 }
 
-// 读取一行数据
 std::string ReceiveOpenMVData::readLine(int fd) {
+    if (fd < 0) {
+        return "";
+    }
+
     std::string line;
     char c;
     ssize_t n;
 
-    while ((n = read(fd, &c, 1)) == 1) {
-        if (c == '\n') {
+    while (true) {
+        n = read(fd, &c, 1);
+
+        if (n == -1) {
+            // 处理读取错误
+            if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                std::cerr << "读取串口错误: " << strerror(errno) << std::endl;
+            }
             break;
+        } else if (n == 0) {
+            // 没有读取到数据，超时
+            break;
+        } else {
+            // 处理换行符和回车符
+            if (c == '\n' || c == '\r') {
+                if (!line.empty()) {
+                    // 避免空行
+                    break;
+                }
+                // 如果是空行则继续读取
+                continue;
+            }
+            line += c;
         }
-        line += c;
     }
 
     return line;
@@ -135,12 +190,17 @@ CalculateTarget::CalculateTarget() {
 }
 
 cv::Point2d CalculateTarget::Decode_Openmv_Data(std::string &input_str) {
-    if (input_str == "null") {
-        return {OPENMV_NULL_ERROR, OPENMV_NULL_ERROR};
+    double point_x = 0, point_y = 0;
+    try {
+        if (input_str == "null") {
+            return {OPENMV_NULL_ERROR, OPENMV_NULL_ERROR};
+        }
+        nlohmann::json j = nlohmann::json::parse(input_str);
+        point_x = j["cx"];
+        point_y = j["cy"];
+    } catch (const std::exception &e) {
+        std::cerr << "发生错误" << e.what() << std::endl;
     }
-    nlohmann::json j = nlohmann::json::parse(input_str);
-    double point_x = j["cx"];
-    double point_y = j["cy"];
     return {point_x, point_y};
 }
 
@@ -165,23 +225,54 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point, d
     // real_y = (1 + image_point_c.y / 100) * height_center;
     //
     // return {real_x, real_y};
+    //cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
+
+    //计算垂直方向像素偏移比例
+    // double vertical_ratio = (image_point.y - image_center.y) / (double) (IMAGE_HEIGHT / 2);
+    //
+    // //距离=中心距离/cos(垂直角度)
+    // double vertical_angle = vertical_ratio * (VERTICAL_FOV / 2.0);
+    // double distance = height / cos(vertical_angle);
+    //
+    // //计算水平方向像素偏移比例
+    // double horizontal_ratio = (image_point.x - image_center.x) / (double) (IMAGE_WIDTH / 2);
+    //
+    // double horizontal_angle = horizontal_ratio * (HORIZONTAL_FOV / 2.0);
+    //
+    // //计算实际x,y坐标
+    // double x = distance * sin(horizontal_angle);
+    // double y = distance * sin(vertical_angle);
+
+
+    //上下的视场与视觉中心大概差20～30度
+    //左右的视场与视觉中心大概差30～35度
+
+    double x_min;
+    double x_max;
+    double y_min;
+    double y_max;
+    double temp_x;
+    double temp_y;
+    double x = 0;
+    double y = 0;
+
     cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
 
-    //计算垂直方向像素偏移比例 (-1到1之间)
-    double vertical_ratio = (image_point.y - image_center.y) / (double) (IMAGE_HEIGHT / 2);
+    y_min = tan(INPUT_ANGLE(HORIZONTAL_ANGLE - 23)) * height;
+    y_max = tan(INPUT_ANGLE(HORIZONTAL_ANGLE + 23)) * height;
 
-    //距离=中心距离/cos(垂直角度)
-    double vertical_angle = vertical_ratio * (VERTICAL_FOV / 2.0);
-    double distance = height / cos(vertical_angle);
+    x_min = height * tan(INPUT_ANGLE(32)) / cos(INPUT_ANGLE(HORIZONTAL_ANGLE - 23));
+    x_max = height * tan(INPUT_ANGLE(32)) / cos(INPUT_ANGLE(HORIZONTAL_ANGLE + 23));
 
-    //计算水平方向像素偏移比例
-    double horizontal_ratio = (image_point.x - image_center.x) / (double) (IMAGE_WIDTH / 2);
+    temp_x = x_max - x_min;
 
-    double horizontal_angle = horizontal_ratio * (HORIZONTAL_FOV / 2.0);
+    x = (x_min + temp_x * ((IMAGE_HEIGHT - image_point.y) / IMAGE_HEIGHT)) * (
+            (image_point.x - IMAGE_WIDTH / 2) / (IMAGE_WIDTH / 2)) / 2;
 
-    //计算实际x,y坐标
-    double x = distance * sin(horizontal_angle);
-    double y = distance * sin(vertical_angle);
+
+    temp_y = y_max - y_min;
+
+    y = y_min + temp_y * ((IMAGE_HEIGHT - image_point.y) / IMAGE_HEIGHT);
 
     return {x, y};
 }

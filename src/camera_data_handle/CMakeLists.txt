@@ -51,18 +51,18 @@ function(add_and_install_executable target_name)
             DESTINATION lib/${PROJECT_NAME})
 endfunction()
 
-add_and_install_executable(mytry
-        SRCS    src/try.cpp
-        LIBS    OpenCL
-)
+#add_and_install_executable(mytry
+#        SRCS    src/try.cpp
+#        LIBS    OpenCL
+#)
 
 #add_and_install_executable(camera_debug
 #        SRCS    src/camera_debug/camera_debug.cpp
- #       DEPS    rclcpp
- #               OpenCV
-  #              cv_bridge
- #               tf2
- #               tf2_geometry_msgs
+#        DEPS    rclcpp
+#                OpenCV
+#                cv_bridge
+#                tf2
+#                tf2_geometry_msgs
 #)
 
 #add_and_install_executable(backup_debug

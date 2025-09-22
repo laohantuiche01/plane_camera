@@ -19,7 +19,7 @@
 // 读取openmv的数据流
 class ReceiveOpenMVData {
 public:
-    explicit ReceiveOpenMVData(std::string port = "/dev/ttyACM0", speed_t baudRate = B19200);
+    explicit ReceiveOpenMVData(std::string port = "/dev/ttyACM0", speed_t baudRate = B115200);
 
     std::string Receive_Openmv_Data();
 
@@ -47,7 +47,7 @@ private:
     static cv::Point2d Decode_Openmv_Data(std::string& input_str);
 
     // 将得到的像素坐标解算(主要算法)
-    static cv::Point2d Transform_Image_TO_Real(cv::Point2d& image_point,double height=0.8);
+    static cv::Point2d Transform_Image_TO_Real(cv::Point2d& image_point,double height=0.5);
 
 };
 

@@ -14,9 +14,21 @@
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include "tf2_ros/transform_broadcaster.h"
 #include "../receive_openmv_data/receive_openmv_data.h"
-
+#include "camera_info/msg/position.hpp"
 
 namespace camera {
+    enum Target {
+        H = 0,
+        TENT = 1,
+        CAR = 2,
+        BRIDGE = 3,
+        PILLBOX = 4,
+        TANK = 5,
+        RED_CROSS = 6,
+    };
+
+
+    ///基类--------------------------------------------------------------------------------
     class TF_Publisher_Base {
     public:
         virtual ~TF_Publisher_Base() = default;
@@ -35,7 +47,7 @@ namespace camera {
         //识别坐标的tf广播器
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
-        //发送的信息(这个是具体的识别信息)
+        //发送的信息(这个是具体地识别信息)
         geometry_msgs::msg::TransformStamped transform_;
 
         bool transform_initialized;
@@ -47,17 +59,20 @@ namespace camera {
         double receive_height_;
     };
 
-    ///继承的目标检测的类
+    ///继承的目标检测的类-------------------------------------------------------------------------------------
     class Detect_Publisher : public TF_Publisher_Base, public rclcpp::Node {
     public:
         Detect_Publisher();
 
-        ~Detect_Publisher() = default;
+        ~Detect_Publisher() override = default;
 
     private:
         void publish_transform() override;
 
         void position_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
+
+        //自定义接口信息发送
+        rclcpp::Publisher<camera_info::msg::Position>::SharedPtr position_pub_;
 
         //接受点的信息
         rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr position_subscription;
@@ -69,22 +84,20 @@ namespace camera {
         int tf2_reflash_num_;
     };
 
-    ///继承的猜测openmv的类
+    ///继承的猜测openmv的类----------------------------------------------------------------------
     class Calculate_Publisher : public TF_Publisher_Base, public rclcpp::Node {
     public:
         Calculate_Publisher();
 
-        ~Calculate_Publisher() = default;
+        ~Calculate_Publisher() override = default;
 
     private:
-
         void publish_transform() override;
 
         std::shared_ptr<CalculateTarget> calculate_target_class_;
         //openmv的信息
         geometry_msgs::msg::TransformStamped transform_openmv_;
     };
-
 }
 
 

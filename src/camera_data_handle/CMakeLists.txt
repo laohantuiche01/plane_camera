@@ -9,6 +9,7 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(OpenVINO REQUIRED)
 find_package(OpenCL REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(camera_info REQUIRED)
 ament_auto_find_build_dependencies()
 
 #option(IF_USE_OPENVINO "Detection use openvino" ON)
@@ -20,14 +21,16 @@ ament_auto_find_build_dependencies()
 #    message(STATUS "OpenVINO support unabled-----------------------!!!!!!!!!!")
 #endif ()
 
-add_definitions(-D VIDEO_WRITE)
-#add_definitions(-D FPS_VISABLE_OPEN)
-#add_definitions(-D YOLOV8_DETECTOR_OFF)
-#add_definitions(-D NO_IMAGE)
-add_definitions(-D DETECTION_OPENVINO_OPEN)
-#add_definitions(-D RUN_THE_FUNCTION_BY_GPU)
-#add_definitions(-D KEY_POINT_TRACKING)
-#add_definitions(-D PREDICT_OPEN)
+
+#add_definitions(-D HIGHT_DEBUG)                 #不接受话题高度,是使用调试高度
+#add_definitions(-D VIDEO_WRITE)                 #开启视频记录
+#add_definitions(-D FPS_VISABLE_OPEN)            #开启fps显示
+#add_definitions(-D YOLOV8_DETECTOR_OFF)         #关闭YOLOv8检测
+#add_definitions(-D NO_IMAGE)                    #关闭图像显示
+add_definitions(-D DETECTION_OPENVINO_OPEN)     #开启openvino加速
+#add_definitions(-D RUN_THE_FUNCTION_BY_GPU)     #将周边函数放到GPU上
+#add_definitions(-D KEY_POINT_TRACKING)          #开启关键点检测
+#add_definitions(-D PREDICT_OPEN)                #开卡尔曼预测
 
 add_definitions(-D PROJECT_PATH=${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -121,9 +124,10 @@ add_and_install_executable(calculate_publish
                 src/receive_openmv_data/receive_openmv_data.cpp
                 src/tf_publish/calculate_publish.cpp
         DEPS    rclcpp
-        tf2
-        tf2_ros
-        tf2_geometry_msgs
+                tf2
+                tf2_ros
+                tf2_geometry_msgs
+                camera_info
 )
 
 

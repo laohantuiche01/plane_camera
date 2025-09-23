@@ -16,7 +16,7 @@
 #include "cmath"
 
 
-// 读取openmv的数据流
+/// 读取openmv的数据流
 class ReceiveOpenMVData {
 public:
     explicit ReceiveOpenMVData(std::string port = "/dev/ttyACM0", speed_t baudRate = B115200);
@@ -32,12 +32,12 @@ private:
     std::string readLine(int fd);
 };
 
-//进行解算
+///进行解算
 class CalculateTarget {
 public:
     CalculateTarget();
 
-    cv::Point2d Handle_Openmv_Data();
+    cv::Point2d Handle_Openmv_Data(double height=0.8);
 
 private:
     // 创建接受信息的ReceiveOpenMVData指针

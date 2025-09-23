@@ -277,7 +277,7 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point, d
     return {x, y};
 }
 
-cv::Point2d CalculateTarget::Handle_Openmv_Data() {
+cv::Point2d CalculateTarget::Handle_Openmv_Data(double height) {
     while (true) {
         std::string input_str = receive_openmv_data_.get()->Receive_Openmv_Data();
         cv::Point2d temp_point = Decode_Openmv_Data(input_str);

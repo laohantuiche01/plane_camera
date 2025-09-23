@@ -12,7 +12,8 @@
 #define OPENMV_NULL_ERROR 321
 #endif
 
-camera::TF_Publisher_Base::TF_Publisher_Base() : height_(0), receive_height_(0), transform_initialized(false) {
+camera::TF_Publisher_Base::TF_Publisher_Base() : height_(0), receive_height_(0),
+                                                 transform_initialized(false) {
 }
 
 void camera::TF_Publisher_Base::publish_transform() {
@@ -45,6 +46,9 @@ camera::Detect_Publisher::Detect_Publisher() : Node("Detect_Publisher"), tf2_ref
     this->get_parameter("height", height_);
 
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+
+    position_pub_ = this->create_publisher<camera_info::msg::Position>(
+        "/robot/imagelocation", 10);
 
     position_subscription = this->create_subscription<std_msgs::msg::Float64MultiArray>(
         "/camera/target/position",
@@ -147,5 +151,3 @@ void camera::Calculate_Publisher::publish_transform() {
     std::cout << guess_point_.x << " " << guess_point_.y << std::endl;
     tf_broadcaster_->sendTransform(transform_openmv_);
 }
-
-

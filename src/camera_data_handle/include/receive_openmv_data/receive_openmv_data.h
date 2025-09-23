@@ -37,18 +37,17 @@ class CalculateTarget {
 public:
     CalculateTarget();
 
-    cv::Point2d Handle_Openmv_Data(double height=0.8);
+    cv::Point2d Handle_Openmv_Data(double height);
 
 private:
     // 创建接受信息的ReceiveOpenMVData指针
     std::shared_ptr<ReceiveOpenMVData> receive_openmv_data_;
 
     // 将受到的字符串解码
-    static cv::Point2d Decode_Openmv_Data(std::string& input_str);
+    static cv::Point2d Decode_Openmv_Data(std::string &input_str);
 
     // 将得到的像素坐标解算(主要算法)
-    static cv::Point2d Transform_Image_TO_Real(cv::Point2d& image_point,double height=0.5);
-
+    static cv::Point2d Transform_Image_TO_Real(cv::Point2d &image_point, double height);
 };
 
 #endif //CAMERA_DATA_HANDLE_RECEIVE_OPENMV_DATA_H

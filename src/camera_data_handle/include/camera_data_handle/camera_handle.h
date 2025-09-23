@@ -12,6 +12,8 @@
 #include "../kalman/kalmanbox.h"
 #include "target_predict.h"
 #include "../point_tracking/point_tracking.h"
+#include "robot_interfaces/msg/image_location.hpp"
+
 
 namespace camera {
     class ReceiveData : public rclcpp::Node {
@@ -25,7 +27,7 @@ namespace camera {
 
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription_;
 
-        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr position_pub_;
+        rclcpp::Publisher<robot_interfaces::msg::ImageLocation>::SharedPtr position_pub_;
         rclcpp::TimerBase::SharedPtr timer_;
 
         std::vector<std::string> output_names_;

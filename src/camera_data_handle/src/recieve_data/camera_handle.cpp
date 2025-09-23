@@ -8,6 +8,8 @@
 #include "cv_bridge/cv_bridge.h"
 #include <openvino/openvino.hpp>
 
+#include "../../include/tf_publish/tf_publish.h"
+
 #define STR(s) #s
 #define MACRO_TO_STR(s) STR(s)
 
@@ -19,11 +21,11 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
 
 #ifdef VIDEO_WRITE
     writer_.open(video_name_,
-                    cv::VideoWriter::fourcc ('M', 'J', 'P', 'G'),
-                    10.0,
-                    Size (640,480),
-                    true
-        );
+                 cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
+                 10.0,
+                 Size(640, 480),
+                 true
+    );
 #endif
 
     // this->declare_parameter("nms_threshold_", 0.4);
@@ -32,7 +34,7 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
     // this->get_parameter("confidence_threshold_", confidence_threshold_);
     // this->get_parameter("nms_threshold_", nms_threshold_);
 
-    position_pub_ = this->create_publisher<std_msgs::msg::Float64MultiArray>(
+    position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>(
         "/camera/target/position",
         10
     );
@@ -112,16 +114,17 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
                 }
                 Point2f predictCenter = tracker_->predict();
                 Rect estimatedBox = tracker_->get_state();
-                //RCLCPP_ERROR(this->get_logger(), "-----------------------------");
+        //RCLCPP_ERROR(this->get_logger(), "-----------------------------");
 
 #ifndef NO_IMAGE
-                circle(image, predictCenter, 5, Scalar(200, 0, 120), 2);
-                cv::rectangle(image, estimatedBox, Scalar(255, 0, 0), 2);
+        circle(image, predictCenter, 5, Scalar(200, 0, 120), 2);
+        cv::rectangle(image, estimatedBox, Scalar(255, 0, 0), 2);
 #endif
 
-                cv::Point2d new_center=target_predict_factory_.StartPredict({predictCenter.x, predictCenter.y},
-                                                     std::chrono::system_clock::now().time_since_epoch().count());
-                circle(image, new_center, 5, Scalar(200, 20, 120), 2);
+        cv::Point2d new_center = target_predict_factory_.StartPredict({predictCenter.x, predictCenter.y},
+                                                                      std::chrono::system_clock::now().
+                                                                      time_since_epoch().count());
+        circle(image, new_center, 5, Scalar(200, 20, 120), 2);
             }
         } catch (cv::Exception e) {
             RCLCPP_WARN(this->get_logger(), "%s", e.what());
@@ -142,15 +145,19 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         }
 
         //信息发送变量
-        std_msgs::msg::Float64MultiArray position_msg;
+        robot_interfaces::msg::ImageLocation position_msg;
 
         if (positions.empty()) {
             RCLCPP_WARN(this->get_logger(), "No detections found");
-            position_msg.data = std::vector<double>(0, 0);
+            position_msg.image_x = 0;
+            position_msg.image_y = 0;
+            position_msg.id = UNKNOW;
             position_pub_->publish(position_msg);
         } else {
             while (!positions.empty()) {
-                position_msg.data = positions.front();
+                position_msg.image_x = static_cast<float>(detections.front().box.x);
+                position_msg.image_y = static_cast<float>(detections.front().box.y);
+                position_msg.id = detections.front().classId;
                 positions.pop_back();
                 position_pub_->publish(position_msg);
             }

@@ -9,7 +9,7 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(OpenVINO REQUIRED)
 find_package(OpenCL REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(camera_info REQUIRED)
+find_package(robot_interfaces REQUIRED)
 ament_auto_find_build_dependencies()
 
 #option(IF_USE_OPENVINO "Detection use openvino" ON)
@@ -105,6 +105,7 @@ add_and_install_executable(receive_data
                 tf2_ros
                 tf2_geometry_msgs
                 yaml-cpp
+                robot_interfaces
         LIBS    OpenCL
                 openvino::runtime
 )
@@ -117,6 +118,7 @@ add_and_install_executable(detect_publish
                 tf2
                 tf2_ros
                 tf2_geometry_msgs
+                robot_interfaces
 )
 
 add_and_install_executable(calculate_publish
@@ -127,7 +129,7 @@ add_and_install_executable(calculate_publish
                 tf2
                 tf2_ros
                 tf2_geometry_msgs
-                camera_info
+                robot_interfaces
 )
 
 

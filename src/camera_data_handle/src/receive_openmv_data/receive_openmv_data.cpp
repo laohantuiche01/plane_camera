@@ -288,7 +288,7 @@ cv::Point2d CalculateTarget::Handle_Openmv_Data(double height) {
             continue;
         }
 
-        cv::Point2d output_point = Transform_Image_TO_Real(temp_point);
+        cv::Point2d output_point = Transform_Image_TO_Real(temp_point, height);
         //std::cout << output_point.x << " " << output_point.y << std::endl;
         return output_point;
     }

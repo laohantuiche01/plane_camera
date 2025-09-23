@@ -6,4 +6,6 @@ RUN_THE_FUNCTION_BY_GPU     是否使用GPU加速图像的前置与后置处理
 KEY_POINT_TRACKING          是否在YOLO无法检测到时使用关键点检测
 PREDICT_OPEN                是否通过卡尔曼滤波预测目标位置
 
+colcon build --cmake-args '-DBUILD_ACCELERATE_GPU_WITH_GLSL=ON'
 
+ros2 launch realsense2_camera rs_launch.py rgb_camera.color_profile:=640x480x30

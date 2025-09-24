@@ -204,46 +204,8 @@ cv::Point2d CalculateTarget::Decode_Openmv_Data(std::string &input_str) {
     return {point_x, point_y};
 }
 
-cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point, double height) {
-    // double the_camera_center = 0.05; //焦点距离影响平面的距离
-    // double the_camera_length = 0.05; //相机下边界长度
-    // double real_x{0} ; //实际的x
-    // double real_y{0} ; //实际的y
-    // double theta_below{0}; //下边界角度
-    // double theta_above{0}; //上边界角度
-    // double length_below{0};
-    // double length_above{0};
-    //
-    // length_below = the_camera_length*(the_camera_center+height)/(sin(theta_below)*the_camera_center);
-    // length_above = the_camera_length*(the_camera_center+height)/(sin(theta_above)*the_camera_center);
-    //
-    // // 把相机高度转化成焦点高度 （这个比例要调the_camera_center）
-    // double height_center = height + the_camera_center;
-    // cv::Point2d image_point_c = cv::Point2d(image_point.x - 160, image_point.y - 120);
-    //
-    // real_x = image_point_c.x * height_center / 100;
-    // real_y = (1 + image_point_c.y / 100) * height_center;
-    //
-    // return {real_x, real_y};
-    //cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
-
-    //计算垂直方向像素偏移比例
-    // double vertical_ratio = (image_point.y - image_center.y) / (double) (IMAGE_HEIGHT / 2);
-    //
-    // //距离=中心距离/cos(垂直角度)
-    // double vertical_angle = vertical_ratio * (VERTICAL_FOV / 2.0);
-    // double distance = height / cos(vertical_angle);
-    //
-    // //计算水平方向像素偏移比例
-    // double horizontal_ratio = (image_point.x - image_center.x) / (double) (IMAGE_WIDTH / 2);
-    //
-    // double horizontal_angle = horizontal_ratio * (HORIZONTAL_FOV / 2.0);
-    //
-    // //计算实际x,y坐标
-    // double x = distance * sin(horizontal_angle);
-    // double y = distance * sin(vertical_angle);
-
-
+cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
+                                                     geometry_msgs::msg::TransformStamped pose) {
     //上下的视场与视觉中心大概差20～30度
     //左右的视场与视觉中心大概差30～35度
 
@@ -255,6 +217,7 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point, d
     double temp_y;
     double x = 0;
     double y = 0;
+    double height = pose.transform.translation.z + 0.39;
 
     cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
 
@@ -277,7 +240,7 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point, d
     return {x, y};
 }
 
-cv::Point2d CalculateTarget::Handle_Openmv_Data(double height) {
+cv::Point2d CalculateTarget::Handle_Openmv_Data(const geometry_msgs::msg::TransformStamped& pose) {
     while (true) {
         std::string input_str = receive_openmv_data_.get()->Receive_Openmv_Data();
         cv::Point2d temp_point = Decode_Openmv_Data(input_str);
@@ -288,7 +251,7 @@ cv::Point2d CalculateTarget::Handle_Openmv_Data(double height) {
             continue;
         }
 
-        cv::Point2d output_point = Transform_Image_TO_Real(temp_point, height);
+        cv::Point2d output_point = Transform_Image_TO_Real(temp_point, pose);
         //std::cout << output_point.x << " " << output_point.y << std::endl;
         return output_point;
     }

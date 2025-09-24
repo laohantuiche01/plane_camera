@@ -13,6 +13,7 @@
 #include <sys/ioctl.h>
 #include <opencv2/opencv.hpp>
 #include "nlohmann/json.hpp"
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include "cmath"
 
 
@@ -37,7 +38,7 @@ class CalculateTarget {
 public:
     CalculateTarget();
 
-    cv::Point2d Handle_Openmv_Data(double height);
+    cv::Point2d Handle_Openmv_Data(const geometry_msgs::msg::TransformStamped& pose);
 
 private:
     // 创建接受信息的ReceiveOpenMVData指针
@@ -47,7 +48,7 @@ private:
     static cv::Point2d Decode_Openmv_Data(std::string &input_str);
 
     // 将得到的像素坐标解算(主要算法)
-    static cv::Point2d Transform_Image_TO_Real(cv::Point2d &image_point, double height);
+    static cv::Point2d Transform_Image_TO_Real(cv::Point2d &image_point, geometry_msgs::msg::TransformStamped pose);
 };
 
 #endif //CAMERA_DATA_HANDLE_RECEIVE_OPENMV_DATA_H

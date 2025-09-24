@@ -14,6 +14,9 @@
 #endif
 
 camera::TF_Publisher_Base::TF_Publisher_Base() : transform_initialized(false), height_(0.8) {
+    use_this_or_camera_pub_msg_ = 0;
+    guess_x = 0;
+    guess_y = 0;
 }
 
 void camera::TF_Publisher_Base::publish_transform() {
@@ -36,6 +39,14 @@ camera::Detect_Publisher::Detect_Publisher() : Node("Detect_Publisher"), tf2_ref
     this->get_parameter("tf2_reflash_num", tf2_reflash_num_);
     this->get_parameter("height", height_);
 
+#ifndef HIGHT_DEBUG
+    sub_height_ = this->create_subscription<geometry_msgs::msg::TransformStamped>(
+        "/robot/current_pose",
+        10,
+        std::bind(&Detect_Publisher::HeightCallback, this, std::placeholders::_1)
+    );
+#endif
+
     position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>(
         "/robot/imagelocation", 10);
 
@@ -49,6 +60,14 @@ camera::Detect_Publisher::Detect_Publisher() : Node("Detect_Publisher"), tf2_ref
         std::chrono::milliseconds(10),
         std::bind(&Detect_Publisher::publish_transform, this));
 }
+
+#ifndef HIGHT_DEBUG
+void camera::Detect_Publisher::HeightCallback(geometry_msgs::msg::TransformStamped::SharedPtr msg) {
+    double height = msg.get()->transform.translation.z + 0.39;
+    height_ = height;
+}
+
+#endif
 
 void camera::Detect_Publisher::position_callback(const robot_interfaces::msg::ImageLocation::SharedPtr msg) {
     //std::cout<<tf2_reflash_num<<std::endl;
@@ -70,6 +89,15 @@ void camera::Detect_Publisher::position_callback(const robot_interfaces::msg::Im
     float y = msg->image_y;
     uint8_t status = msg->id;
     //std::cout << x << " " << y << " " << status << std::endl;
+
+    if (status == RED_CROSS) {
+        if (use_this_or_camera_pub_msg_ >= 10) {
+            guess_x = x;
+            guess_y = y;
+            use_this_or_camera_pub_msg_ = 10;
+        }
+    }
+
 #ifdef THE_TRANSFORM_USE_PREDICT
 
     pub_pos_.image_x = x * 42 / 20700;
@@ -104,14 +132,34 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
     RCLCPP_INFO(this->get_logger(), "TF_Publisher");
 
     calculate_target_class_ = std::make_shared<CalculateTarget>();
+    position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/robot/imagelocation", 10);
 
-    position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>(
-        "/robot/imagelocation", 10);
+#ifndef HIGHT_DEBUG
+    sub_pose_ = this->create_subscription<geometry_msgs::msg::TransformStamped>(
+        "/robot/current_pose",
+        10,
+        std::bind(&Calculate_Publisher::PoseCallback, this, std::placeholders::_1)
+    );
+#endif
+
+#ifdef HIGHT_DEBUG
+    pose_->transform.translation.x = 0;
+    pose_->transform.translation.y = 0;
+    pose_->transform.translation.z = 0.8;
+#endif
 
     send_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(10),
         std::bind(&Calculate_Publisher::publish_transform, this));
 }
+
+#ifndef HIGHT_DEBUG
+void camera::Calculate_Publisher::PoseCallback(geometry_msgs::msg::TransformStamped::SharedPtr msg) {
+    pose_ = msg.get();
+    double height = pose_->transform.translation.z + 0.39;
+    height_ = height;
+}
+#endif
 
 void camera::Calculate_Publisher::publish_transform() {
     if (!transform_initialized) {
@@ -119,11 +167,22 @@ void camera::Calculate_Publisher::publish_transform() {
         transform_initialized = true;
     }
 
-    cv::Point2d guess_point_ = calculate_target_class_.get()->Handle_Openmv_Data(height_);
+    cv::Point2d guess_point_ = calculate_target_class_.get()->Handle_Openmv_Data(*pose_);
     if (guess_point_.x == OPENMV_NULL_ERROR && guess_point_.y == OPENMV_NULL_ERROR) {
         guess_point_.x = 0;
         guess_point_.y = 0;
+
+        if (use_this_or_camera_pub_msg_ <= 10) {
+            use_this_or_camera_pub_msg_++;
+        }
+        //达到十次之后使用d453i当作猜测数据
+        if (use_this_or_camera_pub_msg_ == 10) {
+            guess_point_.x = guess_x;
+            guess_point_.y = guess_y;
+            use_this_or_camera_pub_msg_++;
+        }
     }
+
 
     pub_pos_.image_x = guess_point_.x;
     pub_pos_.image_y = guess_point_.y;

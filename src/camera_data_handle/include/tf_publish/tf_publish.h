@@ -11,6 +11,7 @@
 #endif
 
 #include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>   //高度的消息类型
 
 #include "tf2_ros/transform_broadcaster.h"
 #include "../receive_openmv_data/receive_openmv_data.h"
@@ -40,16 +41,13 @@ namespace camera {
     protected:
         virtual void publish_transform();
 
-        void initialize_transform(robot_interfaces::msg::ImageLocation &msg_loader);
+        static void initialize_transform(robot_interfaces::msg::ImageLocation &msg_loader);
 
         //隔断时间
         rclcpp::TimerBase::SharedPtr send_timer_;
 
         //发布信息的容器
         robot_interfaces::msg::ImageLocation pub_pos_;
-
-        //识别坐标的tf广播器
-        //std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
         //发送的信息(这个是具体地识别信息)
         geometry_msgs::msg::TransformStamped transform_;
@@ -59,6 +57,11 @@ namespace camera {
         //测试用的高度
         double height_;
 
+        //静态变量(看是否能将d435i的数据用作猜测随机靶数据)
+        static uint8_t use_this_or_camera_pub_msg_;
+
+        static float guess_x;
+        static float guess_y;
     };
 
     ///继承的目标检测的类-------------------------------------------------------------------------------------
@@ -76,6 +79,9 @@ namespace camera {
 #ifndef HIGHT_DEBUG
 
         //接受高度
+        rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr sub_height_;
+
+        void HeightCallback(geometry_msgs::msg::TransformStamped::SharedPtr msg);
 
 #endif
 
@@ -102,6 +108,16 @@ namespace camera {
     private:
         void publish_transform() override;
 
+#ifndef HIGHT_DEBUG
+        //接受高度
+        rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr sub_pose_;
+
+        void PoseCallback(geometry_msgs::msg::TransformStamped::SharedPtr msg);
+#endif
+
+        //储存位姿
+        geometry_msgs::msg::TransformStamped_<std::allocator<void>> *pose_;
+
         //自定义接口信息发送
         rclcpp::Publisher<robot_interfaces::msg::ImageLocation>::SharedPtr position_pub_;
 
@@ -109,6 +125,9 @@ namespace camera {
 
         //openmv的信息
         geometry_msgs::msg::TransformStamped transform_openmv_;
+
+        //检测到足够次数才能确定
+        uint8_t if_sure_the_target_real_ = 0;
     };
 }
 

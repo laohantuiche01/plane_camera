@@ -5,6 +5,9 @@
 #define IMAGE_WIDTH 320
 #define IMAGE_HEIGHT 240
 
+#define HORIZON_X 32
+#define HORIZON_Z 23
+
 #define INPUT_ANGLE(s) ((s)*M_PI/180)
 
 const double HORIZONTAL_ANGLE = 60.0;
@@ -206,41 +209,159 @@ cv::Point2d CalculateTarget::Decode_Openmv_Data(std::string &input_str) {
 
 cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
                                                      geometry_msgs::msg::TransformStamped pose) {
-    //上下的视场与视觉中心大概差20～30度
-    //左右的视场与视觉中心大概差30～35度
+    double height = pose.transform.translation.z + 0.39;  // 无人机高度 + 相机安装高度
+    double theta_x, theta_z;
+    double length;
+    double real_x, real_y;
 
-    double x_min;
-    double x_max;
-    double y_min;
-    double y_max;
-    double temp_x;
-    double temp_y;
-    double x = 0;
-    double y = 0;
-    double height = pose.transform.translation.z + 0.39;
+    // 四元数参数
+    double w = pose.transform.rotation.w;
+    double x = pose.transform.rotation.x;
+    double y = pose.transform.rotation.y;
+    double z = pose.transform.rotation.z;
 
     cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
 
-    y_min = tan(INPUT_ANGLE(HORIZONTAL_ANGLE - 23)) * height;
-    y_max = tan(INPUT_ANGLE(HORIZONTAL_ANGLE + 23)) * height;
+    // 1. 计算像素到相机系的角度（弧度）
+    theta_x = INPUT_ANGLE(HORIZON_X) * (image_point.x - image_center.x) / image_center.x;
+    theta_z = INPUT_ANGLE(HORIZON_Z) * (image_center.y - image_point.y) / image_center.y;
 
-    x_min = height * tan(INPUT_ANGLE(32)) / cos(INPUT_ANGLE(HORIZONTAL_ANGLE - 23));
-    x_max = height * tan(INPUT_ANGLE(32)) / cos(INPUT_ANGLE(HORIZONTAL_ANGLE + 23));
+    // 2. 相机系方向向量（归一化）
+    Eigen::Vector3d r_C;
+    r_C.x() = tan(theta_x);
+    r_C.y() = tan(theta_z);
+    r_C.z() = 1.0;
+    r_C.normalize();
 
-    temp_x = x_max - x_min;
+    // 3. 从四元数获取旋转矩阵（无人机系到世界系）
+    Eigen::Quaterniond q(w, x, y, z);
+    Eigen::Matrix3d R_WD = q.normalized().toRotationMatrix();
 
-    x = (x_min + temp_x * ((IMAGE_HEIGHT - image_point.y) / IMAGE_HEIGHT)) * (
-            (image_point.x - IMAGE_WIDTH / 2) / (IMAGE_WIDTH / 2)) / 2;
+    // 4. 相机相对于无人机的固定旋转（根据实际安装角度）
+    // 假设相机向下倾斜45度，绕X轴旋转
+    double cam_pitch = -M_PI/6;  // -45度
+    cam_pitch = 0;
+    Eigen::Matrix3d R_DC;
+    R_DC = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX())    // roll
+         * Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitY())  // pitch
+         * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ());   // yaw
+
+    // 5. 相机系到世界系的完整变换
+    Eigen::Matrix3d R_WC = R_WD * R_DC;
+
+    // 6. 方向向量转换到世界系
+    Eigen::Vector3d r_W = R_WC * r_C;
+
+    // 7. 计算目标在世界系中的位置
+    double t = height / r_W.z();
+    Eigen::Vector3d target_W;
+    target_W.x() = t * r_W.x();
+    target_W.y() = t * r_W.y();
+    target_W.z() = 0.0;  // 假设地面高度为0
+
+    // 8. 转换到无人机系（相对于无人机的位置）
+    Eigen::Vector3d drone_pos(pose.transform.translation.x,
+                             pose.transform.translation.y,
+                             pose.transform.translation.z);
+
+    Eigen::Vector3d target_D = R_WD.transpose() * (target_W - drone_pos);
+
+    real_x = target_D.x();
+    real_y = target_D.y();
+
+    return {real_x, real_y};
 
 
-    temp_y = y_max - y_min;
+    // double height = pose.transform.translation.z + 0.39;
+    // double theta_x;
+    // double theta_z;
+    // double lenth;
+    // double real_x;
+    // double real_y;
+    // double w, x, y, z; //四元数矩阵
+    // cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
+    // Eigen::MatrixXd form_num_to_eigen; //四元数转化成的矩阵
+    // Eigen::MatrixXd target_eigen; //目标要得到的矩阵形式
+    // Eigen::MatrixXd M_transform; //转换的矩阵
+    // Eigen::MatrixXd theta_origin; //之前的角度矩阵
+    // Eigen::MatrixXd theta_rotate; //转换后的角度矩阵
+    //
+    // theta_origin.resize(1, 2);
+    // theta_rotate.resize(1, 2);
+    // target_eigen.resize(3, 3);
+    // form_num_to_eigen.resize(3, 3);
+    // M_transform.resize(3, 3);
+    //
+    // //原始坐标
+    // theta_x = HORIZON_X * (image_point.x - image_center.x) / image_center.x;
+    // theta_z = -HORIZON_Z * (image_point.y - image_center.y) / image_center.y;
+    //
+    // //计算转置矩阵（要用到四元数转）
+    // w = pose.transform.rotation.w;
+    // x = pose.transform.rotation.x;
+    // y = pose.transform.rotation.y;
+    // z = pose.transform.rotation.z;
+    //
+    // form_num_to_eigen <<
+    //         1, 0, 0,
+    //         0, 1, 0,
+    //         0, 0, 1;
+    //
+    // //四元数得到的旋转矩阵
+    // M_transform <<
+    //         1 - 2 * (y * y + z * z) ,   2 * x * y - 2 * z * w   ,   2 * x * z + 2 * y * w,
+    //         2 * x * y + 2 * z * w   ,   1 - 2 * (x * x + z * z) ,   2 * y * z - 2 * x * w,
+    //         2 * x * z - 2 * y * w   ,   2 * y * z + 2 * x * w   ,   1 - 2 * (y * y + x * x);
+    //
+    // //转换坐标
+    // theta_origin <<
+    //         theta_x,
+    //         theta_z;
+    // theta_rotate = theta_rotate * M_transform;
+    //
+    // //求解最终的角度
+    // lenth = height / tan(INPUT_ANGLE(theta_rotate(1,2)));
+    // real_x = lenth * sin(INPUT_ANGLE(theta_rotate(1,1)));
+    // real_y = lenth * cos(INPUT_ANGLE(theta_rotate(1,1)));
+    // return {real_x, real_y};
 
-    y = y_min + temp_y * ((IMAGE_HEIGHT - image_point.y) / IMAGE_HEIGHT);
+    //上下的视场与视觉中心大概差20～30度(23度)
+    //左右的视场与视觉中心大概差30～35度(32度)
+    ///之前的算法
+    /*
+        double x_min;
+        double x_max;
+        double y_min;
+        double y_max;
+        double temp_x;
+        double temp_y;
+        double x = 0;
+        double y = 0;
+        double height = pose.transform.translation.z + 0.39;
 
-    return {x, y};
+        cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
+
+        y_min = tan(INPUT_ANGLE(HORIZONTAL_ANGLE - 23)) * height;
+        y_max = tan(INPUT_ANGLE(HORIZONTAL_ANGLE + 23)) * height;
+
+        x_min = height * tan(INPUT_ANGLE(32)) / cos(INPUT_ANGLE(HORIZONTAL_ANGLE - 23));
+        x_max = height * tan(INPUT_ANGLE(32)) / cos(INPUT_ANGLE(HORIZONTAL_ANGLE + 23));
+
+        temp_x = x_max - x_min;
+
+        x = (x_min + temp_x * ((IMAGE_HEIGHT - image_point.y) / IMAGE_HEIGHT)) * (
+                (image_point.x - IMAGE_WIDTH / 2) / (IMAGE_WIDTH / 2)) / 2;
+
+
+        temp_y = y_max - y_min;
+
+        y = y_min + temp_y * ((IMAGE_HEIGHT - image_point.y) / IMAGE_HEIGHT);
+
+        return {x, y};
+    */
 }
 
-cv::Point2d CalculateTarget::Handle_Openmv_Data(const geometry_msgs::msg::TransformStamped& pose) {
+cv::Point2d CalculateTarget::Handle_Openmv_Data(const geometry_msgs::msg::TransformStamped &pose) {
     while (true) {
         std::string input_str = receive_openmv_data_.get()->Receive_Openmv_Data();
         cv::Point2d temp_point = Decode_Openmv_Data(input_str);

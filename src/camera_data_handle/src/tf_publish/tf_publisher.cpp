@@ -13,6 +13,10 @@
 #define OPENMV_NULL_ERROR 321
 #endif
 
+uint8_t use_this_or_camera_pub_msg_{0};
+float guess_x{0};
+float guess_y{0};
+
 camera::TF_Publisher_Base::TF_Publisher_Base() : transform_initialized(false), height_(0.8) {
     use_this_or_camera_pub_msg_ = 0;
     guess_x = 0;
@@ -142,10 +146,19 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
     );
 #endif
 
+    ///世界系：x向前，y向左，z向上
+    ///无人机系：x向前，y向左，z向上
+    ///相机系：x向右，y向下，z向前
+
 #ifdef HIGHT_DEBUG
+    pose_ = new geometry_msgs::msg::TransformStamped_<std::allocator<void> >();
+    pose_->transform.rotation.w = 0.866;
+    pose_->transform.rotation.x = -0.500;
+    pose_->transform.rotation.y = 0.000;
+    pose_->transform.rotation.z = 0;
     pose_->transform.translation.x = 0;
     pose_->transform.translation.y = 0;
-    pose_->transform.translation.z = 0.8;
+    pose_->transform.translation.z = 0.31;
 #endif
 
     send_timer_ = this->create_wall_timer(
@@ -173,7 +186,8 @@ void camera::Calculate_Publisher::publish_transform() {
         guess_point_.y = 0;
 
         if (use_this_or_camera_pub_msg_ <= 10) {
-            use_this_or_camera_pub_msg_++;
+            // ------------------------------------------------------------------------------debug(单调openmv)
+            //use_this_or_camera_pub_msg_++;
         }
         //达到十次之后使用d453i当作猜测数据
         if (use_this_or_camera_pub_msg_ == 10) {

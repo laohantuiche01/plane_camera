@@ -58,10 +58,10 @@ namespace camera {
         double height_;
 
         //静态变量(看是否能将d435i的数据用作猜测随机靶数据)
-        static uint8_t use_this_or_camera_pub_msg_;
+        // static uint8_t use_this_or_camera_pub_msg_;
 
-        static float guess_x;
-        static float guess_y;
+        // static float guess_x;
+        // static float guess_y;
     };
 
     ///继承的目标检测的类-------------------------------------------------------------------------------------

@@ -14,6 +14,7 @@
 #include <opencv2/opencv.hpp>
 #include "nlohmann/json.hpp"
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <Eigen/Eigen>
 #include "cmath"
 
 

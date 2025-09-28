@@ -152,8 +152,8 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
 
 #ifdef HIGHT_DEBUG
     pose_ = new geometry_msgs::msg::TransformStamped_<std::allocator<void> >();
-    pose_->transform.rotation.w = 0.866;
-    pose_->transform.rotation.x = -0.500;
+    pose_->transform.rotation.w = 1;
+    pose_->transform.rotation.x = 0;
     pose_->transform.rotation.y = 0.000;
     pose_->transform.rotation.z = 0;
     pose_->transform.translation.x = 0;

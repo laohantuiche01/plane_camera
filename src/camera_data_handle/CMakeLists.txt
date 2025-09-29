@@ -22,7 +22,7 @@ ament_auto_find_build_dependencies()
 #endif ()
 
 
-add_definitions(-D HIGHT_DEBUG)                 #不接受话题高度,是使用调试高度
+#add_definitions(-D HIGHT_DEBUG)                 #不接受话题高度,是使用调试高度
 #add_definitions(-D VIDEO_WRITE)                 #开启视频记录
 #add_definitions(-D FPS_VISABLE_OPEN)            #开启fps显示
 #add_definitions(-D YOLOV8_DETECTOR_OFF)         #关闭YOLOv8检测

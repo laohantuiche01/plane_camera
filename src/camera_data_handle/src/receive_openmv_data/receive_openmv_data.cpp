@@ -212,6 +212,7 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
     double height = pose.transform.translation.z + 0.39;  // 无人机高度 + 相机安装高度
     double theta_x, theta_z;
     double length;
+    double cam_pitch;
     double real_x, real_y;
     double w = pose.transform.rotation.w;
     double x = pose.transform.rotation.x;
@@ -220,6 +221,10 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
     Eigen::Vector3d r_C;
     Eigen::Quaterniond q(w, x, y, z);
     Eigen::Matrix3d R_DC;
+    Eigen::Matrix3d R_WD;
+    Eigen::Matrix3d R_WC;
+    Eigen::Vector3d r_W;
+    Eigen::Vector3d target_W;
 
     cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
     theta_x = INPUT_ANGLE(HORIZON_X) * (image_point.x - image_center.x) / image_center.x;
@@ -232,25 +237,24 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
     r_C.normalize();
 
     //旋转矩阵（无人机系到世界系）
-    Eigen::Matrix3d R_WD = q.normalized().toRotationMatrix();
+    R_WD = q.normalized().toRotationMatrix();
 
     //相机相对于无人机的固定旋转
     //绕X轴旋转
-    double cam_pitch = -M_PI/3;  // -30度
+    cam_pitch = -M_PI/3;  // -30度
 
     R_DC = Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitX())    // roll
          * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY())  // pitch
          * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ());   // yaw
 
     //相机系到世界系的变换
-    Eigen::Matrix3d R_WC = R_WD * R_DC;
+    R_WC = R_WD * R_DC;
 
     //方向向量转换到世界系
-    Eigen::Vector3d r_W = R_WC * r_C;
+    r_W = R_WC * r_C;
 
     //计算目标在世界系中的位置
     double t = height / r_W.z();
-    Eigen::Vector3d target_W;
     target_W.x() = t * r_W.x();
     target_W.y() = t * r_W.y();
     target_W.z() = 0.0;  //地面高度为0

@@ -152,14 +152,15 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
 
 #ifdef HIGHT_DEBUG
     pose_ = new geometry_msgs::msg::TransformStamped_<std::allocator<void> >();
+#endif
+
     pose_->transform.rotation.w = 1;
     pose_->transform.rotation.x = 0;
     pose_->transform.rotation.y = 0.000;
     pose_->transform.rotation.z = 0;
     pose_->transform.translation.x = 0;
     pose_->transform.translation.y = 0;
-    pose_->transform.translation.z = 0.31;
-#endif
+    pose_->transform.translation.z = 0.81;
 
     send_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(10),
@@ -171,6 +172,11 @@ void camera::Calculate_Publisher::PoseCallback(geometry_msgs::msg::TransformStam
     pose_ = msg.get();
     double height = pose_->transform.translation.z + 0.39;
     height_ = height;
+
+    RCLCPP_INFO(this->get_logger(), "rotation: w:%f x:%f y:%f z:%f", pose_->transform.rotation.w,
+                pose_->transform.rotation.x, pose_->transform.rotation.y, pose_->transform.rotation.z);
+    RCLCPP_INFO(this->get_logger(), "translation: x:%f y:%f z:%f", pose_->transform.translation.x,
+                pose_->transform.translation.y, pose_->transform.translation.z);
 }
 #endif
 

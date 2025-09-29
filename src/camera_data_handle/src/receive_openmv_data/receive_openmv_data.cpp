@@ -19,7 +19,12 @@ ReceiveOpenMVData::ReceiveOpenMVData(const std::string port,
 }
 
 std::string ReceiveOpenMVData::Receive_Openmv_Data() {
-    int fd = openSerialPort(port_, baudRate_);;
+    int fd = 0;
+    try {
+        fd = openSerialPort(port_, baudRate_);
+    } catch (const std::exception &e) {
+        std::cerr << "A 发生错误: " << e.what() << std::endl;
+    }
 
     int num = 0;
 
@@ -50,7 +55,7 @@ std::string ReceiveOpenMVData::Receive_Openmv_Data() {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     } catch (const std::exception &e) {
-        std::cerr << "发生错误: " << e.what() << std::endl;
+        std::cerr << "B 发生错误: " << e.what() << std::endl;
     } catch (...) {
         std::cerr << "程序已停止" << std::endl;
     }
@@ -202,14 +207,14 @@ cv::Point2d CalculateTarget::Decode_Openmv_Data(std::string &input_str) {
         point_x = j["cx"];
         point_y = j["cy"];
     } catch (const std::exception &e) {
-        std::cerr << "发生错误" << e.what() << std::endl;
+        std::cerr << "C 发生错误" << e.what() << std::endl;
     }
     return {point_x, point_y};
 }
 
 cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
                                                      geometry_msgs::msg::TransformStamped pose) {
-    double height = pose.transform.translation.z + 0.39;  // 无人机高度 + 相机安装高度
+    double height = pose.transform.translation.z + 0.39; // 无人机高度 + 相机安装高度
     double theta_x, theta_z;
     double length;
     double cam_pitch;
@@ -241,11 +246,11 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
 
     //相机相对于无人机的固定旋转
     //绕X轴旋转
-    cam_pitch = -M_PI/3;  // -30度
+    cam_pitch = -M_PI / 3; // -30度
 
-    R_DC = Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitX())    // roll
-         * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY())  // pitch
-         * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ());   // yaw
+    R_DC = Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitX()) // roll
+           * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) // pitch
+           * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ()); // yaw
 
     //相机系到世界系的变换
     R_WC = R_WD * R_DC;
@@ -257,12 +262,12 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
     double t = height / r_W.z();
     target_W.x() = t * r_W.x();
     target_W.y() = t * r_W.y();
-    target_W.z() = 0.0;  //地面高度为0
+    target_W.z() = 0.0; //地面高度为0
 
     //转换到无人机系
     Eigen::Vector3d drone_pos(pose.transform.translation.x,
-                             pose.transform.translation.y,
-                             pose.transform.translation.z);
+                              pose.transform.translation.y,
+                              pose.transform.translation.z);
 
     Eigen::Vector3d target_D = R_WD.transpose() * (target_W - drone_pos);
 
@@ -270,23 +275,26 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
     real_y = target_D.y();
 
     return {real_x, real_y};
-
 }
 
 cv::Point2d CalculateTarget::Handle_Openmv_Data(const geometry_msgs::msg::TransformStamped &pose) {
-    while (true) {
-        std::string input_str = receive_openmv_data_.get()->Receive_Openmv_Data();
-        cv::Point2d temp_point = Decode_Openmv_Data(input_str);
+    try {
+        while (true) {
+            std::string input_str = receive_openmv_data_.get()->Receive_Openmv_Data();
+            cv::Point2d temp_point = Decode_Openmv_Data(input_str);
 
-        if (temp_point == cv::Point2d(OPENMV_NULL_ERROR, OPENMV_NULL_ERROR)) {
-            //std::cout << temp_point.x << " " << temp_point.y << std::endl;
-            return temp_point;
-            continue;
+            if (temp_point == cv::Point2d(OPENMV_NULL_ERROR, OPENMV_NULL_ERROR)) {
+                //std::cout << temp_point.x << " " << temp_point.y << std::endl;
+                return temp_point;
+                continue;
+            }
+
+            cv::Point2d output_point = Transform_Image_TO_Real(temp_point, pose);
+            //std::cout << output_point.x << " " << output_point.y << std::endl;
+            return output_point;
         }
-
-        cv::Point2d output_point = Transform_Image_TO_Real(temp_point, pose);
-        //std::cout << output_point.x << " " << output_point.y << std::endl;
-        return output_point;
+    } catch (const std::exception &e) {
+        std::cerr << "D 发生错误" << e.what() << std::endl;
     }
     return {0, 0};
 }

@@ -170,8 +170,18 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
 #ifndef HIGHT_DEBUG
 void camera::Calculate_Publisher::PoseCallback(geometry_msgs::msg::TransformStamped::SharedPtr msg) {
     pose_ = msg.get();
+    double w = pose_->transform.rotation.w;
+    double x = pose_->transform.rotation.x;
+    double y = pose_->transform.rotation.y;
+    double z = pose_->transform.rotation.z;
+
     double height = pose_->transform.translation.z + 0.39;
     height_ = height;
+
+    pose_->transform.rotation.w = -x;
+    pose_->transform.rotation.x = w;
+    pose_->transform.rotation.y = -z;
+    pose_->transform.rotation.z = y;
 
     RCLCPP_INFO(this->get_logger(), "rotation: w:%f x:%f y:%f z:%f", pose_->transform.rotation.w,
                 pose_->transform.rotation.x, pose_->transform.rotation.y, pose_->transform.rotation.z);

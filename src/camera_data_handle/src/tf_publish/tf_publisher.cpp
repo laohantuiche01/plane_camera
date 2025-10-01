@@ -154,13 +154,13 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
     pose_ = new geometry_msgs::msg::TransformStamped_<std::allocator<void> >();
 #endif
 
-    pose_->transform.rotation.w = 1;
-    pose_->transform.rotation.x = 0;
-    pose_->transform.rotation.y = 0.000;
-    pose_->transform.rotation.z = 0;
+    pose_->transform.rotation.w = 0.933;
+    pose_->transform.rotation.x = -0.250;
+    pose_->transform.rotation.y = 0.067;
+    pose_->transform.rotation.z = 0.250;
     pose_->transform.translation.x = 0;
     pose_->transform.translation.y = 0;
-    pose_->transform.translation.z = 0.81;
+    pose_->transform.translation.z = -0.09;
 
     send_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(10),

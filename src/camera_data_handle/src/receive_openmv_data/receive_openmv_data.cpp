@@ -1,4 +1,9 @@
+#include <utility>
+
 #include "../../include/receive_openmv_data/receive_openmv_data.h"
+#include "tf2/convert.hpp"
+#include "tf2_eigen/tf2_eigen.hpp"
+
 
 #define OPENMV_NULL_ERROR 321
 
@@ -70,7 +75,7 @@ int ReceiveOpenMVData::openSerialPort(const std::string &port, speed_t baudRate)
     struct termios tty;
     int fd = -1;
     int retryCount = 0;
-    const int maxRetries = 10;
+    constexpr int maxRetries = 10;
 
     while (retryCount < maxRetries) {
         fd = open(port.c_str(), O_RDWR | O_NOCTTY);
@@ -192,8 +197,14 @@ std::string ReceiveOpenMVData::readLine(int fd) {
     return line;
 }
 
-
-CalculateTarget::CalculateTarget() {
+///CalculateTarget类----------------------------------------------------------------------------------------------------
+#ifdef RVIZ_DEBUG
+CalculateTarget::CalculateTarget(std::shared_ptr<TFDebug> tf_debug) : tf_debug_ptr_(std::move(tf_debug))
+#endif
+#ifndef RVIZ_DEBUG
+CalculateTarget::CalculateTarget()
+#endif
+{
     receive_openmv_data_ = std::make_shared<ReceiveOpenMVData>();
 }
 
@@ -214,11 +225,11 @@ cv::Point2d CalculateTarget::Decode_Openmv_Data(std::string &input_str) {
 
 cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
                                                      geometry_msgs::msg::TransformStamped pose) {
-    // double height = pose.transform.translation.z + 0.39; // 无人机高度 + 相机安装高度
-    // double theta_x, theta_z;
-    // double length;
-    // double cam_pitch;
-    //double real_x, real_y;
+    double height = pose.transform.translation.z + 0.39; // 无人机高度 + 相机安装高度
+    double theta_x, theta_z;
+    double length;
+    double cam_pitch;
+    double real_x, real_y;
     double w = pose.transform.rotation.w;
     double x = pose.transform.rotation.x;
     double y = pose.transform.rotation.y;
@@ -229,118 +240,125 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
     std::cerr << "X=" << pose.transform.translation.x << "  Y=" << pose.transform.translation.y << "  Z=" << pose.
             transform.translation.z << std::endl;
 
-    // Eigen::Vector3d r_C; //相机系的向量
-    // Eigen::Quaterniond q(w, x, y, z); //构造的四元数
-    // Eigen::Matrix3d R_WD; //由四元数得到的旋转矩阵
-    // Eigen::Matrix3d R_DC; //相机对于无人机系的偏执
-    // Eigen::Matrix3d R_WC; //总的偏执矩阵
-    // Eigen::Vector3d r_W; //世界系中的相机向量
-    // Eigen::Vector3d target_W; //目标的世界向量
-    //
-    // cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
-    // theta_x = INPUT_ANGLE(HORIZON_X) * (image_point.x - image_center.x) / image_center.x;
-    // theta_z = INPUT_ANGLE(HORIZON_Z) * (image_center.y - image_point.y) / image_center.y;
-    //
-    // //相机系方向向量
-    // r_C.x() = tan(theta_x);
-    // r_C.y() = tan(theta_z);
-    // r_C.z() = 1.0;  //这里的 1.0 代表以1为单位高度
-    // r_C.normalize();
-    //
-    // //旋转矩阵（无人机系到世界系）
-    // R_WD = q.normalized().toRotationMatrix();
-    //
-    // //相机相对于无人机的固定旋转
-    // //绕X轴旋转
-    // cam_pitch = -M_PI / 3; // -30度
-    //
-    // R_DC = Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitX()) // roll
-    //        * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) // pitch
-    //        * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ()); // yaw
-    //
-    // //相机系到世界系的变换
-    // R_WC = R_WD * R_DC;
-    //
-    // //方向向量转换到世界系
-    // r_W = R_WC * r_C;
-    //
-    // //计算目标在世界系中的位置
-    // double t = height / r_W.z();
-    // // if (t < 0) {
-    // //     return {OPENMV_NULL_ERROR,OPENMV_NULL_ERROR};
-    // // }
-    // target_W.x() = t * r_W.x();
-    // target_W.y() = t * r_W.y();
-    // target_W.z() = 0.0; //地面高度为0
-    //
-    // //转换到无人机系
-    // // Eigen::Vector3d drone_pos(pose.transform.translation.x,
-    // //                           pose.transform.translation.y,
-    // //                           pose.transform.translation.z);
-    //
-    // //Eigen::Vector3d target_D = R_WD.transpose() * (target_W - drone_pos);
-    //
-    // Eigen::Vector3d target_D = R_WD.transpose() * target_W;
-    //
-    // real_x = target_D.x();
-    // real_y = target_D.y();
-    //
-    // return {real_x, real_y};
+    Eigen::Vector3d r_C; //相机系的向量
+    Eigen::Quaterniond q(w, x, y, z); //构造的四元数
+    Eigen::Matrix3d R_WD; //由四元数得到的旋转矩阵
+    Eigen::Matrix3d R_DC; //相机对于无人机系的偏执
+    Eigen::Matrix3d R_WC; //总的偏执矩阵
+    Eigen::Vector3d r_W; //世界系中的相机向量
+    Eigen::Vector3d target_W; //目标的世界向量
 
-    // 1. 基础参数定义
-    double drone_height = pose.transform.translation.z; // 无人机在世界系的高度
-    double camera_mount_height = 0.21; // 相机相对无人机的安装高度（机身坐标系）
-    double total_height = drone_height + camera_mount_height; // 相机在世界系的总高度
-
-    // 无人机在世界系的位置（平移向量）
-    Eigen::Vector3d drone_pos_W(
-        pose.transform.translation.x,
-        pose.transform.translation.y,
-        drone_height
-    );
-
-    // 2. 图像点转相机系角度
     cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
-    double theta_x = INPUT_ANGLE(HORIZON_X) * (image_point.x - image_center.x) / image_center.x;
-    double theta_z = INPUT_ANGLE(HORIZON_Z) * (image_center.y - image_point.y) / image_center.y;
+    theta_x = INPUT_ANGLE(HORIZON_X) * (image_point.x - image_center.x) / image_center.x;
+    theta_z = INPUT_ANGLE(HORIZON_Z) * (image_center.y - image_point.y) / image_center.y;
 
-    // 3. 相机系方向向量（单位向量）
-    Eigen::Vector3d r_C;
+    //相机系方向向量
     r_C.x() = tan(theta_x);
     r_C.y() = tan(theta_z);
-    r_C.z() = 1.0; // 相机系z轴向前
+    r_C.z() = 1.0; //这里的 1.0 代表以1为单位高度
     r_C.normalize();
 
-    // 4. 旋转矩阵计算
-    // 4.1 无人机到世界系的旋转矩阵（四元数转矩阵）
-    Eigen::Quaterniond q(pose.transform.rotation.w,
-                         pose.transform.rotation.x,
-                         pose.transform.rotation.y,
-                         pose.transform.rotation.z);
-    Eigen::Matrix3d R_WD = q.normalized().toRotationMatrix(); // 无人机系→世界系
+    //旋转矩阵（无人机系到世界系）
+    R_WD = q.normalized().toRotationMatrix();
 
-    // 4.2 相机到无人机系的固定旋转（相机安装角度）
-    double cam_pitch = -M_PI / 3; // 相机俯仰角（向下30度）
-    Eigen::Matrix3d R_DC = Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitX()).toRotationMatrix();
+    //相机相对于无人机的固定旋转
+    //绕X轴旋转
+    cam_pitch = -M_PI / 3; // -30度
 
-    // 4.3 相机系→世界系的总旋转矩阵
-    Eigen::Matrix3d R_WC = R_WD * R_DC;
+    R_DC = Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitX()) // roll
+           * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) // pitch
+           * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ()); // yaw
 
-    // 5. 计算目标在世界系的位置
-    Eigen::Vector3d r_W = R_WC * r_C; // 相机系方向向量转换到世界系
-    if (r_W.z() <= 1e-6) {
-        // 避免除以零（目标在相机正上方/下方）
-        return {0, 0}; // 或返回错误标记
-    }
-    double t = total_height / r_W.z(); // 比例系数（相机高度到地面的映射）
-    Eigen::Vector3d target_pos_W = t * r_W; // 目标在世界系的位置（地面点，z=0）
+    //TFDebug tf2("camera","plane",R_DC);
 
-    // 6. 关键修正：计算目标相对无人机的位置（核心步骤）
-    Eigen::Vector3d target_rel_W = target_pos_W - drone_pos_W; // 世界系中目标相对无人机的偏移
-    Eigen::Vector3d target_rel_D = R_WD.transpose() * target_rel_W; // 转换到无人机机体坐标系
+    //相机系到世界系的变换
+    R_WC = R_WD * R_DC;
 
-    // 7. 返回无人机系下的x,y偏差
-    return {target_rel_D.x(), target_rel_D.y()};
+#ifdef RVIZ_DEBUG
+    tf_debug_ptr_->SetTransform(R_WC);
+    tf_debug_ptr_->broadcast_transform();
+#endif
+
+    //方向向量转换到世界系
+    r_W = R_WC * r_C;
+
+    //计算目标在世界系中的位置
+    double t = height / r_W.z();
+    // if (t < 0) {
+    //     return {OPENMV_NULL_ERROR,OPENMV_NULL_ERROR};
+    // }
+    target_W.x() = t * r_W.x();
+    target_W.y() = t * r_W.y();
+    target_W.z() = 0.0; //地面高度为0
+
+    //转换到无人机系
+    // Eigen::Vector3d drone_pos(pose.transform.translation.x,
+    //                           pose.transform.translation.y,
+    //                           pose.transform.translation.z);
+
+    //Eigen::Vector3d target_D = R_WD.transpose() * (target_W - drone_pos);
+
+    Eigen::Vector3d target_D = R_WD.transpose() * target_W;
+
+    real_x = target_D.x();
+    real_y = target_D.y();
+
+    return {real_x, real_y};
+
+    // 1. 基础参数定义
+    // double drone_height = pose.transform.translation.z; // 无人机在世界系的高度
+    // double camera_mount_height = 0.21; // 相机相对无人机的安装高度（机身坐标系）
+    // double total_height = drone_height + camera_mount_height; // 相机在世界系的总高度
+    //
+    // // 无人机在世界系的位置（平移向量）
+    // Eigen::Vector3d drone_pos_W(
+    //     pose.transform.translation.x,
+    //     pose.transform.translation.y,
+    //     drone_height
+    // );
+    //
+    // // 2. 图像点转相机系角度
+    // cv::Point image_center(IMAGE_WIDTH / 2, IMAGE_HEIGHT / 2);
+    // double theta_x = INPUT_ANGLE(HORIZON_X) * (image_point.x - image_center.x) / image_center.x;
+    // double theta_z = INPUT_ANGLE(HORIZON_Z) * (image_center.y - image_point.y) / image_center.y;
+    //
+    // // 3. 相机系方向向量（单位向量）
+    // Eigen::Vector3d r_C;
+    // r_C.x() = tan(theta_x);
+    // r_C.y() = tan(theta_z);
+    // r_C.z() = 1.0; // 相机系z轴向前
+    // r_C.normalize();
+    //
+    // // 4. 旋转矩阵计算
+    // // 4.1 无人机到世界系的旋转矩阵（四元数转矩阵）
+    // Eigen::Quaterniond q(pose.transform.rotation.w,
+    //                      pose.transform.rotation.x,
+    //                      pose.transform.rotation.y,
+    //                      pose.transform.rotation.z);
+    // Eigen::Matrix3d R_WD = q.normalized().toRotationMatrix(); // 无人机系→世界系
+    //
+    // // 4.2 相机到无人机系的固定旋转（相机安装角度）
+    // double cam_pitch = -M_PI / 3; // 相机俯仰角（向下30度）
+    // Eigen::Matrix3d R_DC = Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitX()).toRotationMatrix();
+    //
+    // // 4.3 相机系→世界系的总旋转矩阵
+    // Eigen::Matrix3d R_WC = R_WD * R_DC;
+    //
+    // // 5. 计算目标在世界系的位置
+    // Eigen::Vector3d r_W = R_WC * r_C; // 相机系方向向量转换到世界系
+    // if (r_W.z() <= 1e-6) {
+    //     // 避免除以零（目标在相机正上方/下方）
+    //     return {0, 0}; // 或返回错误标记
+    // }
+    // double t = total_height / r_W.z(); // 比例系数（相机高度到地面的映射）
+    // Eigen::Vector3d target_pos_W = t * r_W; // 目标在世界系的位置（地面点，z=0）
+    //
+    // // 6. 关键修正：计算目标相对无人机的位置（核心步骤）
+    // Eigen::Vector3d target_rel_W = target_pos_W - drone_pos_W; // 世界系中目标相对无人机的偏移
+    // Eigen::Vector3d target_rel_D = R_WD.transpose() * target_rel_W; // 转换到无人机机体坐标系
+    //
+    // // 7. 返回无人机系下的x,y偏差
+    // return {target_rel_D.x(), target_rel_D.y()};
 }
 
 cv::Point2d CalculateTarget::Handle_Openmv_Data(const geometry_msgs::msg::TransformStamped &pose) {
@@ -363,4 +381,50 @@ cv::Point2d CalculateTarget::Handle_Openmv_Data(const geometry_msgs::msg::Transf
         std::cerr << "D 发生错误" << e.what() << std::endl;
     }
     return {0, 0};
+}
+
+///tfdebug--------------------------------------------------------------------------------------------------------------------------
+TFDebug::TFDebug(std::string parent, std::string child, double X, double Y, double Z)
+    : child_(std::move(child)), parent_(std::move(parent)),
+      X_(X), Y_(Y), Z_(Z) {
+    node_ = rclcpp::Node::make_shared("tf_debug_");
+
+    transform_ <<
+            1, 0, 1,
+            0, 1, 0,
+            0, 0, 1;
+
+    // 初始化TF广播器
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(node_);
+
+    RCLCPP_INFO(node_->get_logger(), "TFDebug initialized: %s -> %s",
+                parent_.c_str(), child_.c_str());
+}
+
+void TFDebug::broadcast_transform() {
+    RCLCPP_INFO(node_->get_logger(), "TFDebug running");
+
+    geometry_msgs::msg::TransformStamped transform_msg;
+
+    // 设置时间戳和坐标系
+    transform_msg.header.stamp = node_->get_clock()->now();
+    transform_msg.header.frame_id = parent_;
+    transform_msg.child_frame_id = child_;
+
+    // 设置平移分量
+    transform_msg.transform.translation.x = X_;
+    transform_msg.transform.translation.y = Y_;
+    transform_msg.transform.translation.z = Z_;
+
+    // 将Eigen旋转矩阵转换为四元数
+    Eigen::Quaterniond eigen_quat(transform_);
+    // 转换为geometry_msgs格式
+    tf2::convert(eigen_quat, transform_msg.transform.rotation);
+
+    // 广播变换
+    tf_broadcaster_->sendTransform(transform_msg);
+}
+
+void TFDebug::SetTransform(Eigen::Matrix3d transform) {
+    transform_ = std::move(transform);
 }

@@ -101,7 +101,12 @@ namespace camera {
     ///继承的猜测openmv的类----------------------------------------------------------------------
     class Calculate_Publisher : public TF_Publisher_Base, public rclcpp::Node {
     public:
-        Calculate_Publisher();
+#ifdef RVIZ_DEBUG
+        explicit Calculate_Publisher(std::shared_ptr<TFDebug> tf_debug);
+#endif
+#ifndef RVIZ_DEBUG
+        explicit Calculate_Publisher();
+#endif
 
         ~Calculate_Publisher() override = default;
 
@@ -128,6 +133,12 @@ namespace camera {
 
         //检测到足够次数才能确定
         uint8_t if_sure_the_target_real_ = 0;
+
+#ifdef RVIZ_DEBUG
+        //传递的指针
+        std::shared_ptr<TFDebug> tf_debug_;
+#endif
+
     };
 }
 

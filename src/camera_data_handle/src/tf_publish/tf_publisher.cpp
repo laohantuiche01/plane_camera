@@ -132,10 +132,22 @@ void camera::Detect_Publisher::publish_transform() {
 
 ///继承的猜测openmv的类
 ///---------------------------------------------------------------------------------------------------------------------
-camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher") {
+#ifdef RVIZ_DEBUG
+camera::Calculate_Publisher::Calculate_Publisher(std::shared_ptr<TFDebug> tf_debug) : Node("Calculate_Publisher"),
+    tf_debug_(std::move(tf_debug))
+#endif
+#ifndef  RVIZ_DEBUG
+camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
+#endif
+{
     RCLCPP_INFO(this->get_logger(), "TF_Publisher");
-
+#ifdef RVIZ_DEBUG
+    calculate_target_class_ = std::make_shared<CalculateTarget>(tf_debug_);
+#endif
+#ifndef RVIZ_DEBUG
     calculate_target_class_ = std::make_shared<CalculateTarget>();
+#endif
+
     position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/robot/imagelocation", 10);
 
 #ifndef HIGHT_DEBUG
@@ -154,13 +166,13 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
     pose_ = new geometry_msgs::msg::TransformStamped_<std::allocator<void> >();
 #endif
 
-    pose_->transform.rotation.w = 0.933;
-    pose_->transform.rotation.x = -0.250;
-    pose_->transform.rotation.y = 0.067;
-    pose_->transform.rotation.z = 0.250;
+    pose_->transform.rotation.w = 1;
+    pose_->transform.rotation.x = 0;
+    pose_->transform.rotation.y = 0;
+    pose_->transform.rotation.z = 0;
     pose_->transform.translation.x = 0;
     pose_->transform.translation.y = 0;
-    pose_->transform.translation.z = -0.09;
+    pose_->transform.translation.z = 0.31;
 
     send_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(10),
@@ -197,6 +209,7 @@ void camera::Calculate_Publisher::publish_transform() {
     }
 
     cv::Point2d guess_point_ = calculate_target_class_.get()->Handle_Openmv_Data(*pose_);
+
     if (guess_point_.x == OPENMV_NULL_ERROR && guess_point_.y == OPENMV_NULL_ERROR) {
         guess_point_.x = 0;
         guess_point_.y = 0;

@@ -1,5 +1,7 @@
 #include "../../include/camera_data_handle/camera_handle.h"
 #include "../../include/camera_data_handle/target_predict.h"
+#include "../../include/tf_publish/tf_publish.h"
+#include "../../include/kalman_moving_target/kalman.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 #include "yaml-cpp/yaml.h"
@@ -8,14 +10,39 @@
 #include "cv_bridge/cv_bridge.h"
 #include <openvino/openvino.hpp>
 
-#include "../../include/tf_publish/tf_publish.h"
-
 #define STR(s) #s
 #define MACRO_TO_STR(s) STR(s)
 
-camera::ReceiveData::ReceiveData() : Node("receive_data"),
-                                     detector_(
-                                         MACRO_TO_STR(PROJECT_PATH)"/model/best.onnx") {
+constexpr uint8_t KALMAN_MODEL = kalman::Kalman::CVMODE; // 选择模型：CVMODE(8维状态)/CAMODE(9维状态)
+constexpr uint16_t MAX_PREDICT_STEP = 3; // 最大预测步数（无观测时最多预测5次）
+constexpr double KALMAN_PERIOD = 0.05; // 卡尔曼运行周期（50ms，即20Hz，匹配传感器频率）
+constexpr double PROCESS_NOISE = 0.0001; // 过程噪声（模型不确定性，值越小越信任模型）
+constexpr double MEAS_NOISE = 0.001; // 测量噪声（观测不确定性，值越小越信任传感器）
+
+
+kalman::KalmanInput camera::transform_to_karman_input(const Yolov8::Detection &detection) {
+    kalman::KalmanInput kalman{};
+    kalman.x = detection.box.x;
+    kalman.y = detection.box.y;
+    kalman.w = detection.box.width;
+    kalman.h = detection.box.height;
+    return kalman;
+}
+
+Eigen::VectorXd camera::transform_to_eigen_vector(const kalman::KalmanInput &input) {
+    Eigen::VectorXd eigen_vector;
+    eigen_vector = Eigen::VectorXd::Zero(4);
+    eigen_vector << input.x, input.y, input.w, input.h;
+    return eigen_vector;
+}
+#ifdef KALMAN_OPEN_DEBUG
+camera::ReceiveData::ReceiveData(std::shared_ptr<kalman::TopicPublisher> topic_publisher_)
+    : Node("receive_data"), kalman_publisher_(topic_publisher_),
+#else
+      camera::ReceiveData::ReceiveData(): Node("receive_data"),
+#endif
+      detector_(
+          MACRO_TO_STR(PROJECT_PATH)"/model/best.onnx") {
     RCLCPP_INFO(this->get_logger(), "Receive Data");
     RCLCPP_INFO(this->get_logger(), MACRO_TO_STR(PROJECT_PATH)"/model/best.onnx");
 
@@ -26,6 +53,17 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
                  Size(640, 480),
                  true
     );
+#endif
+#ifdef KALMAN_OPEN
+    kf_ = std::make_shared<kalman::Kalman>(KALMAN_MODEL, MAX_PREDICT_STEP); //创建对象
+    kf_->T_set(KALMAN_PERIOD); //设置运行周期
+    kf_->Q_set_2d_CV(PROCESS_NOISE); //设置过程噪声
+    kf_->R_set_2d(MEAS_NOISE); //设置观测噪声
+    Eigen::MatrixXd init_P(8, 8);
+    init_P.setIdentity();
+    init_P *= 8.0;
+    kf_->P_init(init_P);
+
 #endif
 
     // this->declare_parameter("nms_threshold_", 0.4);
@@ -90,8 +128,39 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         }
 #endif
 
+#ifdef KALMAN_OPEN
+        if (!detections.empty() || kalman_step_ != 0) {
+            kalman::KalmanInput kalman = transform_to_karman_input(detections.at(0));
+            current_meas_ = transform_to_eigen_vector(kalman);
+            if (!detections.empty()) is_meas_unsuccessful_ = false; //观测成功
+            else {
+                is_meas_unsuccessful_ = true; //观测失败
+                kalman_step_++;
+                if (kalman_step_ == 5) kalman_step_ = 0;
+            }
+            kf_result_ = kf_->kalman_filter(
+                is_meas_unsuccessful_,
+                current_meas_,
+                std::nullopt
+            );
+            Rect kalman_box;
+            kalman_box.x = static_cast<int>(kf_result_.input.x);
+            kalman_box.y = static_cast<int>(kf_result_.input.y);
+            kalman_box.width = static_cast<int>(kf_result_.input.w);
+            kalman_box.height = static_cast<int>(kf_result_.input.h);
+            cv::rectangle(image, kalman_box, Scalar(255, 0, 0), 2);
+            std::cout << "  状态（x,y,w,h）：" << kf_result_.input.x << ", "
+                    << kf_result_.input.y << ", " << kf_result_.input.w << ", " << kf_result_.input.h << std::endl;
+            std::cout << "  速度（vx,vy,vw,vh）：" << kf_result_.v_x << ", "
+                    << kf_result_.v_y << ", " << kf_result_.v_w << ", " << kf_result_.v_h << std::endl;
+            std::cout << "  噪声指标（sigma）：" << kf_result_.sigma << " | 滤波有效？"
+                    << (kf_result_.is_success ? "是" : "否") << std::endl;
+        }
+
+#endif
         std::vector<std::vector<double> > positions = detector_.drawDetections(image, detections);
 #endif
+
 
 #ifdef YOLOV8_DETECTOR_OFF
 
@@ -121,10 +190,10 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         cv::rectangle(image, estimatedBox, Scalar(255, 0, 0), 2);
 #endif
 
-        cv::Point2d new_center = target_predict_factory_.StartPredict({predictCenter.x, predictCenter.y},
-                                                                      std::chrono::system_clock::now().
-                                                                      time_since_epoch().count());
-        circle(image, new_center, 5, Scalar(200, 20, 120), 2);
+        // cv::Point2d new_center = target_predict_factory_.StartPredict({predictCenter.x, predictCenter.y},
+        //                                                               std::chrono::system_clock::now().
+        //                                                               time_since_epoch().count());
+        // circle(image, new_center, 5, Scalar(200, 20, 120), 2);
             }
         } catch (cv::Exception e) {
             RCLCPP_WARN(this->get_logger(), "%s", e.what());

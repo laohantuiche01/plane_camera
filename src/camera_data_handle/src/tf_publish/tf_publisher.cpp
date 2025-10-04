@@ -162,10 +162,9 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
     ///无人机系：x向前，y向左，z向上
     ///相机系：x向右，y向下，z向前
 
-#ifdef HIGHT_DEBUG
     pose_ = new geometry_msgs::msg::TransformStamped_<std::allocator<void> >();
-#endif
 
+#ifdef HIGHT_DEBUG
     pose_->transform.rotation.w = 1;
     pose_->transform.rotation.x = 0;
     pose_->transform.rotation.y = 0;
@@ -173,7 +172,7 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
     pose_->transform.translation.x = 0;
     pose_->transform.translation.y = 0;
     pose_->transform.translation.z = 0.31;
-
+#endif
     send_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(10),
         std::bind(&Calculate_Publisher::publish_transform, this));
@@ -181,7 +180,7 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
 
 #ifndef HIGHT_DEBUG
 void camera::Calculate_Publisher::PoseCallback(geometry_msgs::msg::TransformStamped::SharedPtr msg) {
-    pose_ = msg.get();
+    pose_->transform = msg->transform;
     double w = pose_->transform.rotation.w;
     double x = pose_->transform.rotation.x;
     double y = pose_->transform.rotation.y;

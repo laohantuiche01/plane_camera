@@ -14,7 +14,7 @@ camera::CameraDebug::CameraDebug() :Node("camera_debug"){
 
 void camera::CameraDebug::imageSend() {
 
-    cv::VideoCapture camera("../video/output1.avi");
+    cv::VideoCapture camera("../video/第六次.avi");
     Mat frame;
     while (true) {
         camera.read(frame);

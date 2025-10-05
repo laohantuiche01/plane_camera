@@ -21,10 +21,10 @@ ament_auto_find_build_dependencies()
 #    message(STATUS "OpenVINO support unabled-----------------------!!!!!!!!!!")
 #endif ()
 
-add_definitions(-D KALMAN_OPEN_DEBUG)           #开启卡尔曼跟踪目标调试
-add_definitions(-D KALMAN_OPEN)                 #开启卡尔曼跟踪目标
+#add_definitions(-D KALMAN_OPEN_DEBUG)           #开启卡尔曼跟踪目标调试
+#add_definitions(-D KALMAN_OPEN)                 #开启卡尔曼跟踪目标
 #add_definitions(-D RVIZ_DEBUG)                  #使用rviz显示出坐标变换
-add_definitions(-D HIGHT_DEBUG)                 #不接受话题高度,是使用调试高度
+#add_definitions(-D HIGHT_DEBUG)                 #不接受话题高度,是使用调试高度
 #add_definitions(-D VIDEO_WRITE)                 #开启视频记录
 #add_definitions(-D FPS_VISABLE_OPEN)            #开启fps显示
 #add_definitions(-D YOLOV8_DETECTOR_OFF)         #关闭YOLOv8检测
@@ -69,14 +69,14 @@ add_and_install_executable(kalman_debug
 #        LIBS    OpenCL
 #)
 
-#add_and_install_executable(camera_debug
-#        SRCS    src/camera_debug/camera_debug.cpp
-#        DEPS    rclcpp
-#                OpenCV
-#                cv_bridge
-#                tf2
-#                tf2_geometry_msgs
-#)
+add_and_install_executable(camera_debug
+        SRCS    src/camera_debug/camera_debug.cpp
+        DEPS    rclcpp
+                OpenCV
+                cv_bridge
+                tf2
+                tf2_geometry_msgs
+)
 
 #add_and_install_executable(backup_debug
 #        SRCS    src/recieve_data/detector_backup.cpp

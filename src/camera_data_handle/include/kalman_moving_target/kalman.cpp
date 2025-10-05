@@ -6,11 +6,7 @@
 using namespace std;
 
 //初始化kalman参数，第一个参数为使用的模型，第二个参数为最大预测步长，最大预测时间为：最大预测步长 * kalman运行周期
-#ifdef KALMAN_OPEN_DEBUG
-kalman::Kalman::Kalman(uint8_t _mode, uint16_t _max_predict_cnt, std::shared_ptr<TopicPublisher> publish)
-#else
 kalman::Kalman::Kalman(uint8_t _mode, uint16_t _max_predict_cnt)
-#endif
     : mode(_mode),
       maxPredictCnt(_max_predict_cnt), T(0) {
     sigma_index = 0;

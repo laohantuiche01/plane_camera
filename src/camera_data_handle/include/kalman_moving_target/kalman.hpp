@@ -48,9 +48,6 @@ namespace kalman {
 
     class Kalman {
     private:
-#ifdef KALMAN_OPEN_DEBUG
-        std::shared_ptr<TopicPublisher> topic_publisher_;
-#endif
         uint8_t mode; //使用的卡尔曼模型，目前提供CA和CV模型
         uint16_t missing_cnt; //测量丢失计数
         uint16_t maxPredictCnt; //最大预测步长
@@ -87,12 +84,7 @@ namespace kalman {
         Eigen::MatrixXd R; //测量噪声协方差
         Eigen::MatrixXd Q; //过程噪声协方差s
     public:
-#ifdef KALMAN_OPEN_DEBUG
-        explicit Kalman(uint8_t _mode, uint16_t _max_predict_cnt, std::shared_ptr<TopicPublisher> publish = nullptr);
-#else
         explicit Kalman(uint8_t _mode, uint16_t _max_predict_cnt);
-#endif
-
         //使用匀速运动还是加速运动
         enum KalmanType {
             CVMODE = 0,

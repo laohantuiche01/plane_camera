@@ -35,14 +35,10 @@ Eigen::VectorXd camera::transform_to_eigen_vector(const kalman::KalmanInput &inp
     eigen_vector << input.x, input.y, input.w, input.h;
     return eigen_vector;
 }
-#ifdef KALMAN_OPEN_DEBUG
-camera::ReceiveData::ReceiveData(std::shared_ptr<kalman::TopicPublisher> topic_publisher_)
-    : Node("receive_data"), kalman_publisher_(topic_publisher_),
-#else
-      camera::ReceiveData::ReceiveData(): Node("receive_data"),
-#endif
-      detector_(
-          MACRO_TO_STR(PROJECT_PATH)"/model/best.onnx") {
+
+camera::ReceiveData::ReceiveData() : Node("receive_data"),
+                                     detector_(
+                                         MACRO_TO_STR(PROJECT_PATH)"/model/best.onnx") {
     RCLCPP_INFO(this->get_logger(), "Receive Data");
     RCLCPP_INFO(this->get_logger(), MACRO_TO_STR(PROJECT_PATH)"/model/best.onnx");
 
@@ -54,6 +50,7 @@ camera::ReceiveData::ReceiveData(std::shared_ptr<kalman::TopicPublisher> topic_p
                  true
     );
 #endif
+
 #ifdef KALMAN_OPEN
     kf_ = std::make_shared<kalman::Kalman>(KALMAN_MODEL, MAX_PREDICT_STEP); //创建对象
     kf_->T_set(KALMAN_PERIOD); //设置运行周期
@@ -63,7 +60,10 @@ camera::ReceiveData::ReceiveData(std::shared_ptr<kalman::TopicPublisher> topic_p
     init_P.setIdentity();
     init_P *= 8.0;
     kf_->P_init(init_P);
-
+#ifdef KALMAN_OPEN_DEBUG
+    measure_pub_ = this->create_publisher<Measure>("measure", 10);
+    kalman_pub_ = this->create_publisher<KalmanOutput>("kalman", 10);
+#endif
 #endif
 
     // this->declare_parameter("nms_threshold_", 0.4);
@@ -76,13 +76,11 @@ camera::ReceiveData::ReceiveData(std::shared_ptr<kalman::TopicPublisher> topic_p
         "/camera/target/position",
         10
     );
-
     image_subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
         "/camera/camera/color/image_raw",
         10,
         std::bind(&ReceiveData::imageCallback, this, std::placeholders::_1)
     );
-
     timer_ = this->create_wall_timer(
         std::chrono::seconds(1), [this]() {
             if (!has_received_) {
@@ -138,11 +136,34 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
                 kalman_step_++;
                 if (kalman_step_ == 5) kalman_step_ = 0;
             }
+
+            Measure measure;
+            measure.x = current_meas_[0];
+            measure.y = current_meas_[1];
+            measure.w = current_meas_[2];
+            measure.h = current_meas_[3];
+#ifdef KALMAN_OPEN_DEBUG
+            measure_pub_->publish(measure);
+#endif
             kf_result_ = kf_->kalman_filter(
                 is_meas_unsuccessful_,
                 current_meas_,
                 std::nullopt
             );
+
+            KalmanOutput output;
+            output.x = kf_result_.input.x;
+            output.y = kf_result_.input.y;
+            output.w = kf_result_.input.w;
+            output.h = kf_result_.input.h;
+            output.vx = kf_result_.v_x;
+            output.vy = kf_result_.v_y;
+            output.vw = kf_result_.v_w;
+            output.vh = kf_result_.v_h;
+#ifdef KALMAN_OPEN_DEBUG
+            kalman_pub_->publish(output);
+#endif
+
             Rect kalman_box;
             kalman_box.x = static_cast<int>(kf_result_.input.x);
             kalman_box.y = static_cast<int>(kf_result_.input.y);

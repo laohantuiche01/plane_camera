@@ -21,6 +21,7 @@ ament_auto_find_build_dependencies()
 #    message(STATUS "OpenVINO support unabled-----------------------!!!!!!!!!!")
 #endif ()
 
+add_definitions(-D PID_PREDICT_OPEN)            #开启pid算法预测
 #add_definitions(-D KALMAN_OPEN_DEBUG)           #开启卡尔曼跟踪目标调试
 #add_definitions(-D KALMAN_OPEN)                 #开启卡尔曼跟踪目标
 #add_definitions(-D RVIZ_DEBUG)                  #使用rviz显示出坐标变换
@@ -107,6 +108,7 @@ add_and_install_executable(receive_data
                 src/recieve_data/camera_handle.cpp
                 src/recieve_data/point_tracking.cpp
                 src/recieve_data/detector_backup.cpp
+                src/recieve_data/pid_predict.cpp
                 #src/recieve_data/target_predict.cpp
                 include/kalman_moving_target/kalman.cpp
         DEPS    rclcpp

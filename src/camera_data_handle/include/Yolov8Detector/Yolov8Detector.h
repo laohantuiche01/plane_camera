@@ -35,8 +35,8 @@ namespace Yolov8 {
 
         explicit YOLOv8Detector(const std::string &modelPath,
                                 const std::vector<std::string> &classNames = defaultClassNames,
-                                int imgSize = 320,
-                                float confThreshold = 0.1,
+                                int imgSize = 160,
+                                float confThreshold = 0.5,
                                 float nmsThreshold = 0.4);
 
         void setConfidenceThreshold(float threshold) { confThreshold_ = threshold; }

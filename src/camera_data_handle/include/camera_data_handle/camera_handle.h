@@ -1,6 +1,9 @@
 #ifndef CAMERA_HANDLE_H
 #define CAMERA_HANDLE_H
 
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "opencv4/opencv2/opencv.hpp"
@@ -10,6 +13,7 @@
 #include <robot_interfaces/msg/kalman_output.hpp>
 #include "opencv2/videoio.hpp"
 
+#include "../PID_predect/pid_predict.hpp"
 #include "../Yolov8Detector/Yolov8Detector.h"
 #include "../kalman/kalmanbox.h"
 #include "target_predict.h"
@@ -35,9 +39,13 @@ namespace camera {
 
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription_;
         rclcpp::Publisher<robot_interfaces::msg::ImageLocation>::SharedPtr position_pub_;
+        rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr pose_sub_;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr twist_sub_; //接受速度的
         rclcpp::TimerBase::SharedPtr timer_;
         std::vector<std::string> output_names_;
         std::vector<std::string> class_names_;
+        geometry_msgs::msg::TransformStamped pose_;
+        geometry_msgs::msg::Twist twist_;
         double confidence_threshold_{0.0};
         double nms_threshold_{0.0};
         double fps_time_sum_{0.0};
@@ -48,6 +56,12 @@ namespace camera {
         std::string model_path_;
         cv::TickMeter fps_timer_;
         cv::dnn::Net net_;
+#ifdef PID_PREDICT_OPEN
+        int max_running{0};
+        V_Predict v_predict_;
+        TargetSpeedEstimator estimator;
+        rclcpp::Publisher<Measure>::SharedPtr measure_pub_;
+#endif
 #ifdef KALMAN_OPEN_DEBUG
         rclcpp::Publisher<Measure>::SharedPtr measure_pub_;
         rclcpp::Publisher<KalmanOutput>::SharedPtr kalman_pub_;

@@ -1,4 +1,7 @@
 #include "../../include/camera_data_handle/camera_handle.h"
+
+#include <geometry_msgs/msg/detail/pose_stamped__struct.hpp>
+
 #include "../../include/camera_data_handle/target_predict.h"
 #include "../../include/tf_publish/tf_publish.h"
 #include "../../include/kalman_moving_target/kalman.hpp"
@@ -13,12 +16,13 @@
 #define STR(s) #s
 #define MACRO_TO_STR(s) STR(s)
 
+#ifdef KALMAN_OPEN
 constexpr uint8_t KALMAN_MODEL = kalman::Kalman::CVMODE; // 选择模型：CVMODE(8维状态)/CAMODE(9维状态)
 constexpr uint16_t MAX_PREDICT_STEP = 3; // 最大预测步数（无观测时最多预测5次）
 constexpr double KALMAN_PERIOD = 0.05; // 卡尔曼运行周期（50ms，即20Hz，匹配传感器频率）
 constexpr double PROCESS_NOISE = 0.0001; // 过程噪声（模型不确定性，值越小越信任模型）
 constexpr double MEAS_NOISE = 0.001; // 测量噪声（观测不确定性，值越小越信任传感器）
-
+#endif
 
 kalman::KalmanInput camera::transform_to_karman_input(const Yolov8::Detection &detection) {
     kalman::KalmanInput kalman{};
@@ -50,7 +54,6 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
                  true
     );
 #endif
-
 #ifdef KALMAN_OPEN
     kf_ = std::make_shared<kalman::Kalman>(KALMAN_MODEL, MAX_PREDICT_STEP); //创建对象
     kf_->T_set(KALMAN_PERIOD); //设置运行周期
@@ -65,16 +68,32 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
     kalman_pub_ = this->create_publisher<KalmanOutput>("kalman", 10);
 #endif
 #endif
-
+#ifdef PID_PREDICT_OPEN
+    estimator.set_max_history_size(4);
+    estimator.set_smoothing_factor(0.4);
+    estimator.set_max_position_jump(30.0);
+    measure_pub_ = this->create_publisher<Measure>("measure", 10);
+#endif
     // this->declare_parameter("nms_threshold_", 0.4);
     // this->declare_parameter("confidence_threshold_", 0.5);
     //
     // this->get_parameter("confidence_threshold_", confidence_threshold_);
     // this->get_parameter("nms_threshold_", nms_threshold_);
-
-    position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>(
-        "/camera/target/position",
-        10
+    position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/camera/target/position", 10);
+    twist_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
+        "cmd_vel",
+        10,
+        [this](const geometry_msgs::msg::Twist::ConstSharedPtr msg) {
+            twist_.angular = msg->angular;
+            twist_.linear = msg->linear;
+        }
+    );
+    pose_sub_ = this->create_subscription<geometry_msgs::msg::TransformStamped>(
+        "/robot/current_pose",
+        10,
+        [this](const geometry_msgs::msg::TransformStamped::ConstSharedPtr msg) {
+            pose_.transform = msg->transform;
+        }
     );
     image_subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
         "/camera/camera/color/image_raw",
@@ -89,7 +108,8 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
                 RCLCPP_INFO(this->get_logger(), "Has been receive!");
                 timer_->cancel();
             }
-        });
+        }
+    );
 }
 
 void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr msg) {
@@ -125,7 +145,27 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
             if (detections.empty()) if_do_tracking_ = false;
         }
 #endif
-
+#ifdef PID_PREDICT_OPEN
+        Measure msg_;
+        if (!detections.empty()) {
+            estimator.update_position(detections.front().box.x, detections.front().box.y);
+            //auto [dx,dy] = pid_tracker_.pid_control(detections.front().box.x, detections.front().box.y);
+            auto [dx,dy] = estimator.get_speed();
+            auto [dx1,dy1]=v_predict_.Predict(detections.front().box.x, detections.front().box.y);
+            msg_.x = dx;
+            msg_.y = dy;
+            msg_.h = dx1;
+            msg_.w = dy1;
+            circle(image, Point2f(dx1 + 320, dy1 + 240), 3, Scalar(255, 0, 0), 5);
+        } else {
+            max_running++;
+        }
+        if (max_running == 10) {
+            max_running = 0;
+            estimator.reset();
+        }
+        measure_pub_->publish(msg_);
+#endif
 #ifdef KALMAN_OPEN
         if (!detections.empty() || kalman_step_ != 0) {
             kalman::KalmanInput kalman = transform_to_karman_input(detections.at(0));
@@ -138,44 +178,44 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
             }
 
             Measure measure;
-            measure.x = current_meas_[0];
-            measure.y = current_meas_[1];
+            measure.x = current_meas_[0] + current_meas_[2] / 2.0;
+            measure.y = current_meas_[1] + current_meas_[3] / 2.0;
             measure.w = current_meas_[2];
             measure.h = current_meas_[3];
 #ifdef KALMAN_OPEN_DEBUG
-            measure_pub_->publish(measure);
+        measure_pub_->publish(measure);
 #endif
-            kf_result_ = kf_->kalman_filter(
-                is_meas_unsuccessful_,
-                current_meas_,
-                std::nullopt
-            );
+        kf_result_ = kf_->kalman_filter(
+            is_meas_unsuccessful_,
+            current_meas_,
+            std::nullopt
+        );
 
-            KalmanOutput output;
-            output.x = kf_result_.input.x;
-            output.y = kf_result_.input.y;
-            output.w = kf_result_.input.w;
-            output.h = kf_result_.input.h;
-            output.vx = kf_result_.v_x;
-            output.vy = kf_result_.v_y;
-            output.vw = kf_result_.v_w;
-            output.vh = kf_result_.v_h;
+        KalmanOutput output;
+        output.x = kf_result_.input.x;
+        output.y = kf_result_.input.y;
+        output.w = kf_result_.input.w;
+        output.h = kf_result_.input.h;
+        output.vx = kf_result_.v_x;
+        output.vy = kf_result_.v_y;
+        output.vw = kf_result_.v_w;
+        output.vh = kf_result_.v_h;
 #ifdef KALMAN_OPEN_DEBUG
-            kalman_pub_->publish(output);
+        kalman_pub_->publish(output);
 #endif
 
-            Rect kalman_box;
-            kalman_box.x = static_cast<int>(kf_result_.input.x);
-            kalman_box.y = static_cast<int>(kf_result_.input.y);
-            kalman_box.width = static_cast<int>(kf_result_.input.w);
-            kalman_box.height = static_cast<int>(kf_result_.input.h);
-            cv::rectangle(image, kalman_box, Scalar(255, 0, 0), 2);
-            std::cout << "  状态（x,y,w,h）：" << kf_result_.input.x << ", "
-                    << kf_result_.input.y << ", " << kf_result_.input.w << ", " << kf_result_.input.h << std::endl;
-            std::cout << "  速度（vx,vy,vw,vh）：" << kf_result_.v_x << ", "
-                    << kf_result_.v_y << ", " << kf_result_.v_w << ", " << kf_result_.v_h << std::endl;
-            std::cout << "  噪声指标（sigma）：" << kf_result_.sigma << " | 滤波有效？"
-                    << (kf_result_.is_success ? "是" : "否") << std::endl;
+        Rect kalman_box;
+        kalman_box.x = static_cast<int>(kf_result_.input.x);
+        kalman_box.y = static_cast<int>(kf_result_.input.y);
+        kalman_box.width = static_cast<int>(kf_result_.input.w);
+        kalman_box.height = static_cast<int>(kf_result_.input.h);
+        cv::rectangle(image, kalman_box, Scalar(255, 0, 0), 2);
+        std::cout << "  状态（x,y,w,h）：" << kf_result_.input.x << ", "
+                << kf_result_.input.y << ", " << kf_result_.input.w << ", " << kf_result_.input.h << std::endl;
+        std::cout << "  速度（vx,vy,vw,vh）：" << kf_result_.v_x << ", "
+                << kf_result_.v_y << ", " << kf_result_.v_w << ", " << kf_result_.v_h << std::endl;
+        std::cout << "  噪声指标（sigma）：" << kf_result_.sigma << " | 滤波有效？"
+                << (kf_result_.is_success ? "是" : "否") << std::endl;
         }
 
 #endif
@@ -277,7 +317,7 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
 
 #ifndef NO_IMAGE
         namedWindow("image", cv::WINDOW_NORMAL);
-        cv::resizeWindow("image", 2000, 1500);
+        cv::resizeWindow("image", 1000, 750);
 #endif
 
 #ifdef FPS_VISABLE_OPEN

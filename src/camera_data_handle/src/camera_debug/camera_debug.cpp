@@ -14,11 +14,23 @@ camera::CameraDebug::CameraDebug() :Node("camera_debug"){
 
 void camera::CameraDebug::imageSend() {
 
-    cv::VideoCapture camera("../video/第六次.avi");
+    cv::VideoCapture cap("../video/try_1.avi");
     Mat frame;
-    while (true) {
-        camera.read(frame);
+    int frame_counter = 0;
+    while (true)
+    {
+        cap >> frame;
+        if (!frame.data)
+        {
+            printf("Image not loaded");
+            return ;
+        }
 
+        frame_counter += 1;
+        if (frame_counter == int(cap.get(cv::CAP_PROP_FRAME_COUNT))){
+            frame_counter = 0;
+            cap.set(cv::CAP_PROP_POS_FRAMES, 0);
+        }
         sensor_msgs::msg::Image img_msg;
 
         cvtColor(frame,frame,cv::COLOR_BGR2RGB);
@@ -37,8 +49,10 @@ void camera::CameraDebug::imageSend() {
 
         pub_->publish(img_msg);
 
-        //imshow("camera", frame);
-        waitKey(30);
+        //cv::imshow("demo", frame);
+        char(key)=(char)cv::waitKey(30);
+        if(key==27)
+            break;
     }
 
 }

@@ -36,21 +36,21 @@ private:
     std::vector<TargetPosition> position_history;
     size_t max_history_size; // 最大历史记录数量
     // 速度计算参数
-    double min_time_interval; // 计算速度的最小时间间隔(秒)
-    double max_position_jump; // 认为是异常值的最大位置跳变(像素)
+    double min_time_interval; // 计算速度的最小时间间隔
+    double max_position_jump; // 认为是异常值的最大位置跳变
     // 滤波参数
-    double smoothing_factor; // 指数平滑因子(0-1)，值越大越信任新数据
+    double smoothing_factor; // 0-1，值越大越信任新数据
     // 内部状态
     double current_vx; // 当前X方向速度(像素/秒)
     double current_vy; // 当前Y方向速度(像素/秒)
-    // 辅助函数：计算两个时间戳之间的秒数
+    // 计算两个时间戳之间的秒数
     double calculate_time_diff(const std::chrono::high_resolution_clock::time_point &t1,
                                const std::chrono::high_resolution_clock::time_point &t2);
 
-    // 辅助函数：检查位置是否为异常值
+    // 检查位置是否为异常值
     bool is_outlier(const TargetPosition &new_pos);
 
-    // 辅助函数：使用指数平滑过滤速度
+    // 使用指数平滑过滤速度
     void smooth_speed(double &current, double new_value);
 
 public:
@@ -69,7 +69,7 @@ public:
     // 添加新的目标位置并更新速度估计
     void update_position(double x, double y);
 
-    // 获取当前估计的速度(像素/秒)
+    // 获取当前估计的速度
     std::tuple<double, double> get_speed() const;
 
     // 获取历史位置记录

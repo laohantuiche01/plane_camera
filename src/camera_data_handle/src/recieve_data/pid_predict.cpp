@@ -8,7 +8,7 @@ TargetSpeedEstimator::TargetSpeedEstimator(int width, int height)
     : img_width(width),
       img_height(height),
       max_history_size(10),
-      min_time_interval(0.05), // 50毫秒
+      min_time_interval(0.01), // 10毫秒
       max_position_jump(100.0), // 100像素
       smoothing_factor(0.3), // 平滑因子
       current_vx(0.0),
@@ -77,7 +77,6 @@ bool TargetSpeedEstimator::is_outlier(const TargetPosition &new_pos) {
 }
 
 void TargetSpeedEstimator::smooth_speed(double &current, double new_value) {
-    // 指数平滑: current = (1 - factor)*current + factor*new_value
     current = (1 - smoothing_factor) * current + smoothing_factor * new_value;
 }
 
@@ -153,7 +152,7 @@ std::tuple<double, double> V_Predict::Camera_Speed_To_Real(double height, double
 
 cv::Point2f V_Predict::Predict(int x, int y, geometry_msgs::msg::Twist twist,
                                geometry_msgs::msg::TransformStamped pose) {
-    double dt = 0.01;
+    double dt = 10;
     estimator_.update_position(x, y);
     camera_pose_.transform = pose.transform;
     plane_velocity_ = twist;
@@ -168,6 +167,6 @@ cv::Point2f V_Predict::Predict(int x, int y) {
     estimator_.update_position(x, y);
     auto [camera_dx,camera_dy] = estimator_.get_speed();
     auto [plane_dx,plane_dy] = Camera_Speed_To_Real(1, camera_dx, camera_dy);
-    auto [dx,dy] = Calculate_dv(plane_dx, plane_dy, 0, 0);
+    auto [dx,dy] = Calculate_dv(plane_dx, plane_dy, 10, 10);
     return {static_cast<float>(dx * dt), static_cast<float>(dy * dt)};
 }

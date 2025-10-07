@@ -69,8 +69,8 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
 #endif
 #endif
 #ifdef PID_PREDICT_OPEN
-    estimator.set_max_history_size(4);
-    estimator.set_smoothing_factor(0.4);
+    estimator.set_max_history_size(5);
+    estimator.set_smoothing_factor(0.1);
     estimator.set_max_position_jump(30.0);
     measure_pub_ = this->create_publisher<Measure>("measure", 10);
 #endif

@@ -10,8 +10,10 @@ camera::DetectorBackup::DetectorBackup() : Node("backup") {
     namedWindow("mask_image", WINDOW_AUTOSIZE);
     namedWindow("Mask", WINDOW_AUTOSIZE);
 
-    createTrackbar("Hue Min", "Mask", &hmin_, 179, on_trackbar, this);
-    createTrackbar("Hue Max", "Mask", &hmax_, 179, on_trackbar, this);
+    // createTrackbar("Hue Min", "Mask", &hmin_, 179, on_trackbar, this);
+    // createTrackbar("Hue Max", "Mask", &hmax_, 179, on_trackbar, this);
+    createTrackbar("Hue Min", "Mask", &hmin_, 180, on_trackbar, this);
+    createTrackbar("Hue Max", "Mask", &hmax_, 180, on_trackbar, this);
     createTrackbar("Sat Min", "Mask", &smin_, 255, on_trackbar, this);
     createTrackbar("Sat Max", "Mask", &smax_, 255, on_trackbar, this);
     createTrackbar("Val Min", "Mask", &vmin_, 255, on_trackbar, this);
@@ -30,10 +32,12 @@ void camera::DetectorBackup::imageCallback(sensor_msgs::msg::Image::ConstSharedP
     cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGB8);
     cv::Mat temp_image = cv_ptr->image;
     cv::cvtColor(temp_image, image_, cv::COLOR_BGR2RGB);
+    //cv::cvtColor(image_, hsv_, cv::COLOR_BGR2HSV);
     cv::cvtColor(image_, hsv_, cv::COLOR_BGR2HSV);
 
     Scalar lower(hmin_, smin_, vmin_);
     Scalar upper(hmax_, smax_, vmax_);
+    //inRange(hsv_, lower, upper, mask_);
     inRange(hsv_, lower, upper, mask_);
 
     imshow("image", image_);

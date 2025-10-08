@@ -69,6 +69,12 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
 #endif
 #endif
 #ifdef PID_PREDICT_OPEN
+    int max_history_size = 5;
+    int smoothing_factor = 0.1;
+    int max_position_jump = 30;
+    this->declare_parameter("max_history_size", 5);
+    this->declare_parameter("smoothing_factor", 0.1);
+    this->declare_parameter("max_position_jump", 30.0);
     estimator.set_max_history_size(5);
     estimator.set_smoothing_factor(0.1);
     estimator.set_max_position_jump(30.0);
@@ -81,7 +87,7 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
     // this->get_parameter("nms_threshold_", nms_threshold_);
     position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/camera/target/position", 10);
     twist_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-        "cmd_vel",
+        "/robot/v",
         10,
         [this](const geometry_msgs::msg::Twist::ConstSharedPtr msg) {
             twist_.angular = msg->angular;
@@ -151,12 +157,15 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
             estimator.update_position(detections.front().box.x, detections.front().box.y);
             //auto [dx,dy] = pid_tracker_.pid_control(detections.front().box.x, detections.front().box.y);
             auto [dx,dy] = estimator.get_speed();
-            auto [dx1,dy1]=v_predict_.Predict(detections.front().box.x, detections.front().box.y);
+            auto [dx1,dy1] = v_predict_.Predict(detections.front().box.x, detections.front().box.y);
             msg_.x = dx;
             msg_.y = dy;
             msg_.h = dx1;
             msg_.w = dy1;
-            circle(image, Point2f(dx1 + 320, dy1 + 240), 3, Scalar(255, 0, 0), 5);
+            circle(image,
+                   Point2f(dx1 + detections.front().box.x + detections.front().box.width / 2
+                           , dy1 + detections.front().box.y + detections.front().box.height / 2),
+                   3, Scalar(255, 0, 0), 5);
         } else {
             max_running++;
         }

@@ -3,7 +3,7 @@
 receive_USB::receive_USB() : Node("USB_pub") {
     usb_camera_ = std::make_shared<usb_camera::USBCamera>(2);
     usb_camera_->OpenCameraDevice();
-    usb_camera_->SetExposure(300);
+    usb_camera_->SetExposure(150);
     pub_ = this->create_publisher<sensor_msgs::msg::Image>("/camera/camera/color/image_raw", 10);
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(30),

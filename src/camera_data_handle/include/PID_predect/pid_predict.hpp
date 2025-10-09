@@ -30,61 +30,91 @@ struct TargetPosition {
 
 class TargetSpeedEstimator {
 private:
-    const int img_width;
-    const int img_height;
-    // 存储历史位置的缓冲区
+    int img_width;
+    int img_height;
+    size_t max_history_size;
+    double min_time_interval;
+    double max_position_jump;
+    double smoothing_factor;
+    double current_vx;
+    double current_vy;
+    double max_integral;
     std::vector<TargetPosition> position_history;
-    size_t max_history_size; // 最大历史记录数量
-    // 速度计算参数
-    double min_time_interval; // 计算速度的最小时间间隔
-    double max_position_jump; // 认为是异常值的最大位置跳变
-    // 滤波参数
-    double smoothing_factor; // 0-1，值越大越信任新数据
-    // 内部状态
-    double current_vx; // 当前X方向速度(像素/秒)
-    double current_vy; // 当前Y方向速度(像素/秒)
-    // 计算两个时间戳之间的秒数
-    double calculate_time_diff(const std::chrono::high_resolution_clock::time_point &t1,
-                               const std::chrono::high_resolution_clock::time_point &t2);
+    double kp;
+    double ki;
+    double kd;
+    double integral_x;
+    double integral_y;
+    double prev_error_x;
+    double prev_error_y;
+    double history_weight_factor; // 0-1 值越大越相信当前速度
 
-    // 检查位置是否为异常值
+    //计算两个时间点之间的差值
+    double calculate_time_diff(
+        const std::chrono::high_resolution_clock::time_point &t1,
+        const std::chrono::high_resolution_clock::time_point &t2);
+
+    //判断新位置是否为异常值
     bool is_outlier(const TargetPosition &new_pos);
 
-    // 使用指数平滑过滤速度
+    // 平滑速度
     void smooth_speed(double &current, double new_value);
+
+    // 计算历史速度的加权平均
+    std::tuple<double, double> calculate_weighted_history_speed();
 
 public:
     // 构造函数
     explicit TargetSpeedEstimator(int width = 640, int height = 480);
 
-    // 设置参数
+    // 设置历史记录最大数量
     void set_max_history_size(size_t size);
 
+    // 设置最小时间间隔
     void set_min_time_interval(double interval);
 
+    // 设置最大位置跳变阈值
     void set_max_position_jump(double jump);
 
+    // 设置平滑因子
     void set_smoothing_factor(double factor);
 
-    // 添加新的目标位置并更新速度估计
+    // 设置PID参数
+    void set_pid_parameters(double p, double i, double d);
+
+    // 设置历史权重因子
+    void set_history_weight_factor(double factor);
+
+    // 更新目标位置并计算速度
     void update_position(double x, double y);
 
-    // 获取当前估计的速度
-    std::tuple<double, double> get_speed() const;
+    //使用PID控制获取平滑的目标速度
+    std::tuple<double, double> get_smoothed_speed(double target_x, double target_y);
 
-    // 获取历史位置记录
-    const std::vector<TargetPosition> &get_history() const;
+    [[nodiscard]] std::tuple<double, double> get_speed() const;
 
-    // 重置估计器
+    [[nodiscard]] const std::vector<TargetPosition> &get_history() const;
+
+    void set_kp(double p);
+
+    void set_ki(double p);
+
+    void set_kd(double p);
+
+    void set_max_integral(double p);
+
+    //重置所有状态
     void reset();
 };
+
 
 class V_Predict {
 private:
     TargetSpeedEstimator estimator_;
     geometry_msgs::msg::Twist plane_velocity_; //无人机的速度向量
     geometry_msgs::msg::TransformStamped camera_pose_; //可以得到高度
-    std::vector<TargetPosition> position_history_; //储存之前的数据
+    double rate_; // 速度转换的比率
+    double dt_; //最后乘的系数
 
     std::tuple<double, double> Camera_Speed_To_Real(double height, double x, double y);
 
@@ -93,11 +123,17 @@ private:
 public:
     V_Predict();
 
+    TargetSpeedEstimator get_estimator();
+
     cv::Point2f Predict(int x, int y,
                         geometry_msgs::msg::Twist twist,
                         geometry_msgs::msg::TransformStamped pose);
 
     cv::Point2f Predict(int x, int y);
+
+    void set_rate(double rate) { rate_ = rate; }
+
+    void set_dt(double dt) { dt_ = dt; }
 };
 
 

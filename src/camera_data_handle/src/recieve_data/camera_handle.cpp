@@ -69,15 +69,54 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
 #endif
 #endif
 #ifdef PID_PREDICT_OPEN
-    int max_history_size = 5;
-    int smoothing_factor = 0.1;
-    int max_position_jump = 30;
-    this->declare_parameter("max_history_size", 5);
-    this->declare_parameter("smoothing_factor", 0.1);
+    double max_history_size = 5.0;
+    double smoothing_factor = 0.1;
+    double max_position_jump = 30.0;
+    double min_time_interval = 0.03;
+    double pid_parameters_p = 0.5;
+    double pid_parameters_i = 0.1;
+    double pid_parameters_d = 0.2;
+    double history_weight_factor = 0.7;
+    double max_integral = 40.0;
+    double estimator_rate_ = 1.0;
+    double estimator_dt_ = 10.0;
+
+    this->declare_parameter("max_history_size", 5.0);
+    this->declare_parameter("smoothing_factor", 0.8);
     this->declare_parameter("max_position_jump", 30.0);
-    estimator.set_max_history_size(5);
-    estimator.set_smoothing_factor(0.1);
-    estimator.set_max_position_jump(30.0);
+    this->declare_parameter("min_time_interval", 0.03);
+    this->declare_parameter("pid_parameters_p", 0.5);
+    this->declare_parameter("pid_parameters_i", 0.1);
+    this->declare_parameter("pid_parameters_d", 0.2);
+    this->declare_parameter("history_weight_factor", 0.7);
+    this->declare_parameter("max_integral", 40.0);
+    this->declare_parameter("estimator_rate_", 1.0);
+    this->declare_parameter("estimator_dt_", 10.0);
+
+    this->get_parameter("max_history_size", max_history_size);
+    this->get_parameter("smoothing_factor", smoothing_factor);
+    this->get_parameter("max_position_jump", max_position_jump);
+    this->get_parameter("min_time_interval", min_time_interval);
+    this->get_parameter("pid_parameters_p", pid_parameters_p);
+    this->get_parameter("pid_parameters_i", pid_parameters_i);
+    this->get_parameter("pid_parameters_d", pid_parameters_d);
+    this->get_parameter("history_weight_factor", history_weight_factor);
+    this->get_parameter("max_integral", max_integral);
+    this->get_parameter("estimator_rate_", estimator_rate_);
+    this->get_parameter("estimator_dt_", estimator_dt_);
+
+    v_predict_.get_estimator().set_max_history_size(static_cast<size_t>(max_history_size));
+    v_predict_.get_estimator().set_smoothing_factor(smoothing_factor);
+    v_predict_.get_estimator().set_max_position_jump(max_position_jump);
+    v_predict_.get_estimator().set_min_time_interval(min_time_interval);
+    v_predict_.get_estimator().set_kp(pid_parameters_p);
+    v_predict_.get_estimator().set_ki(pid_parameters_i);
+    v_predict_.get_estimator().set_kd(pid_parameters_d);
+    v_predict_.get_estimator().set_history_weight_factor(history_weight_factor);
+    v_predict_.get_estimator().set_max_integral(max_integral);
+    v_predict_.set_rate(estimator_rate_);
+    v_predict_.set_dt(estimator_dt_);
+
     measure_pub_ = this->create_publisher<Measure>("measure", 10);
 #endif
     // this->declare_parameter("nms_threshold_", 0.4);

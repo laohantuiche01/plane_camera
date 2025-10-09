@@ -8,16 +8,17 @@ def generate_launch_description():
         Node(
             package="camera_data_handle",
             executable='receive_data',
-            name='receive_data'
+            name='receive_data',
             #output="screen"
-            #parameters=[
-                #'/home/zxk/桌面/Unmanned_Aerial_Vehicle_Workspace/camera_handle/src/camera_data_handle/config/param.yaml']
-        ),
-        Node(
-            package="camera_data_handle",
-            executable='tf_publish',
-            name='tf_publish'
+            parameters=[
+                './src/camera_data_handle/config/param.yaml']
         )
+        # ,
+        # Node(
+        #     package="camera_data_handle",
+        #     executable='tf_publish',
+        #     name='tf_publish'
+        # )
     ])
 
 # from launch import LaunchDescription

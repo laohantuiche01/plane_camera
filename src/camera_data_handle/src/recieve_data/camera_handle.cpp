@@ -125,6 +125,7 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
     // this->get_parameter("confidence_threshold_", confidence_threshold_);
     // this->get_parameter("nms_threshold_", nms_threshold_);
     position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/camera/target/position", 10);
+
     twist_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
         "/robot/v",
         10,
@@ -191,19 +192,19 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         }
 #endif
 #ifdef PID_PREDICT_OPEN
-        Measure msg_;
+        //Measure msg_;
         if (!detections.empty()) {
             estimator.update_position(detections.front().box.x, detections.front().box.y);
             //auto [dx,dy] = pid_tracker_.pid_control(detections.front().box.x, detections.front().box.y);
             auto [dx,dy] = estimator.get_speed();
-            auto [dx1,dy1] = v_predict_.Predict(detections.front().box.x, detections.front().box.y);
-            msg_.x = dx;
-            msg_.y = dy;
-            msg_.h = dx1;
-            msg_.w = dy1;
+            predict_result_ = v_predict_.Predict(detections.front().box.x, detections.front().box.y);
+            // msg_.x = dx;
+            // msg_.y = dy;
+            // msg_.h = dx1;
+            // msg_.w = dy1;
             circle(image,
-                   Point2f(dx1 + detections.front().box.x + detections.front().box.width / 2
-                           , dy1 + detections.front().box.y + detections.front().box.height / 2),
+                   Point2f(predict_result_.x + detections.front().box.x + detections.front().box.width / 2
+                           , predict_result_.y + detections.front().box.y + detections.front().box.height / 2),
                    3, Scalar(255, 0, 0), 5);
         } else {
             max_running++;
@@ -212,7 +213,7 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
             max_running = 0;
             estimator.reset();
         }
-        measure_pub_->publish(msg_);
+        //measure_pub_->publish(msg_);
 #endif
 #ifdef KALMAN_OPEN
         if (!detections.empty() || kalman_step_ != 0) {
@@ -333,8 +334,14 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
             position_pub_->publish(position_msg);
         } else {
             while (!positions.empty()) {
+#ifndef PUB_PRE_NOT_REAL
                 position_msg.image_x = static_cast<float>(detections.front().box.x);
                 position_msg.image_y = static_cast<float>(detections.front().box.y);
+#endif
+#ifdef PUB_PRE_NOT_REAL
+                position_msg.image_x = static_cast<float>(predict_result_.x);
+                position_msg.image_y = static_cast<float>(predict_result_.y);
+#endif
                 position_msg.id = detections.front().classId;
                 positions.pop_back();
                 position_pub_->publish(position_msg);

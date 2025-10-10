@@ -58,6 +58,7 @@ namespace camera {
         cv::dnn::Net net_;
 #ifdef PID_PREDICT_OPEN
         int max_running{0};
+        cv::Point2f predict_result_;
         V_Predict v_predict_;
         TargetSpeedEstimator estimator;
         rclcpp::Publisher<Measure>::SharedPtr measure_pub_;

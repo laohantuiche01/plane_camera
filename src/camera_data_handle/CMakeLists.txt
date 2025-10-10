@@ -34,6 +34,7 @@ add_definitions(-D DETECTION_OPENVINO_OPEN)     #开启openvino加速
 #add_definitions(-D RUN_THE_FUNCTION_BY_GPU)     #将周边函数放到GPU上
 #add_definitions(-D KEY_POINT_TRACKING)          #开启关键点检测
 #add_definitions(-D PREDICT_OPEN)                #开卡尔曼预测
+add_definitions(-D PUB_PRE_NOT_REAL)             #发送预测的目标点而非实际检测到的目标
 
 add_definitions(-D PROJECT_PATH=${CMAKE_CURRENT_SOURCE_DIR})
 

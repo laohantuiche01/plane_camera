@@ -43,6 +43,8 @@ camera::Detect_Publisher::Detect_Publisher() : Node("Detect_Publisher"), tf2_ref
     this->get_parameter("tf2_reflash_num", tf2_reflash_num_);
     this->get_parameter("height", height_);
 
+    position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/robot/imagelocation", 10);
+
 #ifndef HIGHT_DEBUG
     sub_height_ = this->create_subscription<geometry_msgs::msg::TransformStamped>(
         "/robot/current_pose",
@@ -50,9 +52,6 @@ camera::Detect_Publisher::Detect_Publisher() : Node("Detect_Publisher"), tf2_ref
         std::bind(&Detect_Publisher::HeightCallback, this, std::placeholders::_1)
     );
 #endif
-
-    position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>(
-        "/robot/imagelocation", 10);
 
     position_subscription = this->create_subscription<robot_interfaces::msg::ImageLocation>(
         "/camera/target/position",
@@ -67,6 +66,7 @@ camera::Detect_Publisher::Detect_Publisher() : Node("Detect_Publisher"), tf2_ref
 
 #ifndef HIGHT_DEBUG
 void camera::Detect_Publisher::HeightCallback(geometry_msgs::msg::TransformStamped::SharedPtr msg) {
+    ///这里加了个0.39-------------------------------------------------------------------------
     double height = msg.get()->transform.translation.z + 0.39;
     height_ = height;
 }

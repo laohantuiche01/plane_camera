@@ -43,7 +43,7 @@ camera::Detect_Publisher::Detect_Publisher() : Node("Detect_Publisher"), tf2_ref
     this->get_parameter("tf2_reflash_num", tf2_reflash_num_);
     this->get_parameter("height", height_);
 
-    position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/robot/imagelocation", 10);
+    position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/robot/image_location", 10);
 
 #ifndef HIGHT_DEBUG
     sub_height_ = this->create_subscription<geometry_msgs::msg::TransformStamped>(
@@ -148,7 +148,7 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
     //calculate_target_class_ = std::make_shared<CalculateTarget>();
 #endif
 
-    position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/robot/imagelocation", 10);
+    position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/robot/image_location", 10);
 
 #ifndef HIGHT_DEBUG
     sub_pose_ = this->create_subscription<geometry_msgs::msg::TransformStamped>(

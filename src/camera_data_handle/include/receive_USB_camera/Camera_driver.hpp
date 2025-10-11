@@ -21,7 +21,7 @@ namespace usb_camera {
         bool SetGain(int gain);
 
     private:
-        cv::Mat frame_;
+        cv::Mat frame_{};
         cv::VideoCapture cap_;
         int exposure_;
         int ios_;

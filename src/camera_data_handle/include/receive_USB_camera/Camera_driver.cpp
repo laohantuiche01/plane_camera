@@ -27,7 +27,7 @@ Mat usb_camera::USBCamera::GetFrame() {
         cap_.read(frame_);
         return frame_;
     }
-    return Mat();
+    return {};
 }
 
 bool usb_camera::USBCamera::SetIndex(int index) {

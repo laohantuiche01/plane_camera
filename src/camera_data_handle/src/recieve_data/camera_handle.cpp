@@ -335,8 +335,8 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
         } else {
             while (!positions.empty()) {
 #ifndef PUB_PRE_NOT_REAL
-                position_msg.image_x = static_cast<float>(detections.front().box.x);
-                position_msg.image_y = static_cast<float>(detections.front().box.y);
+                position_msg.image_x = static_cast<float>(positions.front().at(0));
+                position_msg.image_y = static_cast<float>(positions.front().at(1));
 #endif
 #ifdef PUB_PRE_NOT_REAL
                 position_msg.image_x = static_cast<float>(predict_result_.x);

@@ -145,7 +145,7 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
     calculate_target_class_ = std::make_shared<CalculateTarget>(tf_debug_);
 #endif
 #ifndef RVIZ_DEBUG
-    calculate_target_class_ = std::make_shared<CalculateTarget>();
+    //calculate_target_class_ = std::make_shared<CalculateTarget>();
 #endif
 
     position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/robot/imagelocation", 10);
@@ -161,7 +161,6 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
     ///世界系：x向前，y向左，z向上
     ///无人机系：x向前，y向左，z向上
     ///相机系：x向右，y向下，z向前
-
     pose_ = new geometry_msgs::msg::TransformStamped_<std::allocator<void> >();
 
 #ifdef HIGHT_DEBUG
@@ -207,7 +206,9 @@ void camera::Calculate_Publisher::publish_transform() {
         transform_initialized = true;
     }
 
-    cv::Point2d guess_point_ = calculate_target_class_.get()->Handle_Openmv_Data(*pose_);
+    //cv::Point2d guess_point_ = calculate_target_class_.get()->Handle_Openmv_Data(*pose_);
+    cv::Point2d output=usb_factor_.Receive_Keypoint();
+    cv::Point2d guess_point_ = usb_factor_.Transform_Image_TO_Real(output,*pose_);
 
     if (guess_point_.x == OPENMV_NULL_ERROR && guess_point_.y == OPENMV_NULL_ERROR) {
         guess_point_.x = 0;

@@ -21,11 +21,11 @@ ament_auto_find_build_dependencies()
 #    message(STATUS "OpenVINO support unabled-----------------------!!!!!!!!!!")
 #endif ()
 
+#add_definitions(-D HIGHT_DEBUG)                 #不接受话题高度,是使用调试高度
 add_definitions(-D PID_PREDICT_OPEN)            #开启pid算法预测
 #add_definitions(-D KALMAN_OPEN_DEBUG)           #开启卡尔曼跟踪目标调试
 #add_definitions(-D KALMAN_OPEN)                 #开启卡尔曼跟踪目标
 #add_definitions(-D RVIZ_DEBUG)                  #使用rviz显示出坐标变换
-#add_definitions(-D HIGHT_DEBUG)                 #不接受话题高度,是使用调试高度
 #add_definitions(-D VIDEO_WRITE)                 #开启视频记录
 #add_definitions(-D FPS_VISABLE_OPEN)            #开启fps显示
 #add_definitions(-D YOLOV8_DETECTOR_OFF)         #关闭YOLOv8检测
@@ -34,7 +34,7 @@ add_definitions(-D DETECTION_OPENVINO_OPEN)     #开启openvino加速
 #add_definitions(-D RUN_THE_FUNCTION_BY_GPU)     #将周边函数放到GPU上
 #add_definitions(-D KEY_POINT_TRACKING)          #开启关键点检测
 #add_definitions(-D PREDICT_OPEN)                #开卡尔曼预测
-add_definitions(-D PUB_PRE_NOT_REAL)             #发送预测的目标点而非实际检测到的目标
+#add_definitions(-D PUB_PRE_NOT_REAL)             #发送预测的目标点而非实际检测到的目标
 
 add_definitions(-D PROJECT_PATH=${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -58,39 +58,39 @@ function(add_and_install_executable target_name)
             DESTINATION lib/${PROJECT_NAME})
 endfunction()
 
-add_and_install_executable(kalman_debug
-        SRCS    include/kalman_moving_target/test.cpp
-                include/kalman_moving_target/kalman.cpp
-        DEPS    rclcpp
-                OpenCV
-                tf2_eigen
-)
+#add_and_install_executable(kalman_debug
+#        SRCS    include/kalman_moving_target/test.cpp
+#                include/kalman_moving_target/kalman.cpp
+#        DEPS    rclcpp
+#                OpenCV
+#                tf2_eigen
+#)
 
 #add_and_install_executable(mytry
 #        SRCS    src/try.cpp
 #        LIBS    OpenCL
 #)
 
-add_and_install_executable(camera_debug
-        SRCS    src/camera_debug/camera_debug.cpp
-        DEPS    rclcpp
-                OpenCV
-                cv_bridge
-                tf2
-                tf2_geometry_msgs
-)
+#add_and_install_executable(camera_debug
+#        SRCS    src/camera_debug/camera_debug.cpp
+#        DEPS    rclcpp
+#                OpenCV
+#                cv_bridge
+#                tf2
+#                tf2_geometry_msgs
+#)
 
-add_and_install_executable(backup_debug
-        SRCS    src/recieve_data/detector_backup.cpp
-                src/backup_debug.cpp
-        DEPS    rclcpp
-                OpenCV
-                cv_bridge
-                tf2
-                tf2_ros
-                tf2_geometry_msgs
-        LIBS    OpenCL
-)
+#add_and_install_executable(backup_debug
+#        SRCS    src/recieve_data/detector_backup.cpp
+#                src/backup_debug.cpp
+#        DEPS    rclcpp
+#                OpenCV
+#                cv_bridge
+#                tf2
+#                tf2_ros
+#                tf2_geometry_msgs
+#        LIBS    OpenCL
+#)
 
 #add_and_install_executable(predict_debug
 #        SRCS    src/camera_debug/predict_debug.cpp
@@ -102,6 +102,26 @@ add_and_install_executable(backup_debug
  #               tf2_geometry_msgs
 #)
 
+#add_and_install_executable(receive_openmv_data
+#        SRCS    src/receive_openmv_data/receive_openmv_data.cpp
+#        DEPS    rclcpp
+#                OpenCV
+
+#)
+
+
+#add_and_install_executable(USB_camera
+#        SRCS    include/receive_USB_camera/Camera_driver.cpp
+#                src/receive_USB_camera/receive_USB_camera.cpp
+#                src/receive_USB_camera/USB_test.cpp
+#        DEPS    OpenCV
+#                tf2
+#                rclcpp
+#                tf2_eigen
+#                tf2_ros
+#                robot_interfaces
+#                sensor_msgs
+#)
 
 add_and_install_executable(receive_data
         SRCS    src/recieve_data/receive_data.cpp
@@ -126,47 +146,33 @@ add_and_install_executable(receive_data
 
 add_and_install_executable(detect_publish
         SRCS    src/tf_publish/tf_publisher.cpp
-                src/receive_openmv_data/receive_openmv_data.cpp
+                #src/receive_openmv_data/receive_openmv_data.cpp
                 src/tf_publish/detect_publish.cpp
         DEPS    rclcpp
+                OpenCV
                 tf2
                 tf2_ros
                 tf2_eigen
                 tf2_geometry_msgs
-                robot_interfaces
-)
-
-add_and_install_executable(USB_camera
-        SRCS    include/receive_USB_camera/Camera_driver.cpp
-                src/receive_USB_camera/receive_USB_camera.cpp
-                src/receive_USB_camera/USB_test.cpp
-        DEPS    OpenCV
-                tf2
-                rclcpp
-                tf2_ros
                 robot_interfaces
                 sensor_msgs
 )
 
 add_and_install_executable(calculate_publish
         SRCS    src/tf_publish/tf_publisher.cpp
-                src/receive_openmv_data/receive_openmv_data.cpp
+                #src/receive_openmv_data/receive_openmv_data.cpp
+                include/receive_USB_camera/Camera_driver.cpp
                 src/tf_publish/calculate_publish.cpp
+                src/receive_USB_camera/receive_USB_camera.cpp
         DEPS    rclcpp
                 tf2
+                OpenCV
                 tf2_ros
                 tf2_eigen
                 tf2_geometry_msgs
                 robot_interfaces
+                sensor_msgs
 )
-
-
-#add_and_install_executable(receive_openmv_data
-#        SRCS    src/receive_openmv_data/receive_openmv_data.cpp
-#        DEPS    rclcpp
-#                OpenCV
-
-#)
 
 if (BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)

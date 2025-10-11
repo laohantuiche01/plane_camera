@@ -2,6 +2,7 @@
 #define TF_PUBLISH_H
 
 #define THE_TRANSFORM_USE_PREDICT
+#include "../receive_USB_camera/receive_USB_camera.hpp"
 //#define THE_TRANSFORM_USE_ACCELERATE
 
 #ifdef THE_TRANSFORM_USE_PREDICT
@@ -16,6 +17,8 @@
 #include "tf2_ros/transform_broadcaster.h"
 #include "../receive_openmv_data/receive_openmv_data.h"
 #include "robot_interfaces/msg/image_location.hpp"
+#include "../receive_USB_camera/receive_USB_camera.hpp"
+#include <opencv4/opencv2/opencv.hpp>
 
 namespace camera {
     enum Target {
@@ -126,7 +129,8 @@ namespace camera {
         //自定义接口信息发送
         rclcpp::Publisher<robot_interfaces::msg::ImageLocation>::SharedPtr position_pub_;
 
-        std::shared_ptr<CalculateTarget> calculate_target_class_;
+        //std::shared_ptr<CalculateTarget> calculate_target_class_;
+        usb_camera::USBFactor usb_factor_;
 
         //openmv的信息
         geometry_msgs::msg::TransformStamped transform_openmv_;

@@ -8,22 +8,23 @@
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <opencv2/opencv.hpp>
 
-// class receive_USB : public rclcpp::Node {
-// public:
-//     receive_USB();
-//
-//     cv::Point2f Receive_Keypoint();
-//
-// private:
-//     void callback();
-//
-//     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
-//     rclcpp::TimerBase::SharedPtr timer_;
-//     std::shared_ptr<usb_camera::USBCamera> usb_camera_;
-//     cv::Mat image_;
-//     cv::Scalar color_lower_;
-//     cv::Scalar color_upper_;
-// };
+class receive_USB : public rclcpp::Node {
+public:
+    receive_USB();
+
+    cv::Point2f Receive_Keypoint();
+
+private:
+    void callback();
+
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
+    rclcpp::TimerBase::SharedPtr timer_;
+    std::shared_ptr<usb_camera::USBCamera> usb_camera_;
+    cv::Mat image_;
+    cv::Scalar color_lower_;
+    cv::Scalar color_upper_;
+};
+
 namespace usb_camera {
     class USBFactor {
     public:

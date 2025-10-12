@@ -71,26 +71,26 @@ endfunction()
 #        LIBS    OpenCL
 #)
 
-#add_and_install_executable(camera_debug
-#        SRCS    src/camera_debug/camera_debug.cpp
-#        DEPS    rclcpp
-#                OpenCV
-#                cv_bridge
-#                tf2
-#                tf2_geometry_msgs
-#)
+add_and_install_executable(camera_debug
+        SRCS    src/camera_debug/camera_debug.cpp
+        DEPS    rclcpp
+                OpenCV
+                cv_bridge
+                tf2
+                tf2_geometry_msgs
+)
 
-#add_and_install_executable(backup_debug
-#        SRCS    src/recieve_data/detector_backup.cpp
-#                src/backup_debug.cpp
-#        DEPS    rclcpp
-#                OpenCV
-#                cv_bridge
-#                tf2
-#                tf2_ros
-#                tf2_geometry_msgs
-#        LIBS    OpenCL
-#)
+add_and_install_executable(backup_debug
+        SRCS    src/recieve_data/detector_backup.cpp
+                src/backup_debug.cpp
+        DEPS    rclcpp
+                OpenCV
+                cv_bridge
+                tf2
+                tf2_ros
+                tf2_geometry_msgs
+        LIBS    OpenCL
+)
 
 #add_and_install_executable(predict_debug
 #        SRCS    src/camera_debug/predict_debug.cpp
@@ -110,18 +110,18 @@ endfunction()
 #)
 
 
-#add_and_install_executable(USB_camera
-#        SRCS    include/receive_USB_camera/Camera_driver.cpp
-#                src/receive_USB_camera/receive_USB_camera.cpp
-#                src/receive_USB_camera/USB_test.cpp
-#        DEPS    OpenCV
-#                tf2
-#                rclcpp
-#                tf2_eigen
-#                tf2_ros
-#                robot_interfaces
-#                sensor_msgs
-#)
+add_and_install_executable(USB_camera
+        SRCS    include/receive_USB_camera/Camera_driver.cpp
+                src/receive_USB_camera/receive_USB_camera.cpp
+                src/receive_USB_camera/USB_test.cpp
+        DEPS    OpenCV
+                tf2
+                rclcpp
+                tf2_eigen
+                tf2_ros
+                robot_interfaces
+                sensor_msgs
+)
 
 add_and_install_executable(receive_data
         SRCS    src/recieve_data/receive_data.cpp

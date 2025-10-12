@@ -188,10 +188,10 @@ void camera::Calculate_Publisher::PoseCallback(geometry_msgs::msg::TransformStam
     double height = pose_->transform.translation.z + 0.39;
     height_ = height;
 
-    pose_->transform.rotation.w = -x;
-    pose_->transform.rotation.x = w;
-    pose_->transform.rotation.y = -z;
-    pose_->transform.rotation.z = y;
+    // pose_->transform.rotation.w = -x;
+    // pose_->transform.rotation.x = w;
+    // pose_->transform.rotation.y = -z;
+    // pose_->transform.rotation.z = y;
 
     RCLCPP_INFO(this->get_logger(), "rotation: w:%f x:%f y:%f z:%f", pose_->transform.rotation.w,
                 pose_->transform.rotation.x, pose_->transform.rotation.y, pose_->transform.rotation.z);
@@ -214,16 +214,16 @@ void camera::Calculate_Publisher::publish_transform() {
         guess_point_.x = 0;
         guess_point_.y = 0;
 
-        if (use_this_or_camera_pub_msg_ <= 10) {
-            // ------------------------------------------------------------------------------debug(单调openmv)
-            //use_this_or_camera_pub_msg_++;
-        }
-        //达到十次之后使用d453i当作猜测数据
-        if (use_this_or_camera_pub_msg_ == 10) {
-            guess_point_.x = guess_x;
-            guess_point_.y = guess_y;
-            use_this_or_camera_pub_msg_++;
-        }
+        // if (use_this_or_camera_pub_msg_ <= 10) {
+        //     // ------------------------------------------------------------------------------debug(单调openmv)
+        //     //use_this_or_camera_pub_msg_++;
+        // }
+        // //达到十次之后使用d453i当作猜测数据
+        // if (use_this_or_camera_pub_msg_ == 10) {
+        //     guess_point_.x = guess_x;
+        //     guess_point_.y = guess_y;
+        //     use_this_or_camera_pub_msg_++;
+        // }
     }
 
 

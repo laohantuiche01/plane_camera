@@ -2,107 +2,60 @@
 
 #define OPENMV_NULL_ERROR 321
 
-#define IMAGE_WIDTH 320
-#define IMAGE_HEIGHT 240
+#define IMAGE_WIDTH 640
+#define IMAGE_HEIGHT 480
 
-#define HORIZON_X 32
-#define HORIZON_Z 23
+#define HORIZON_X 23.5
+#define HORIZON_Z 18.4
 
 #define INPUT_ANGLE(s) ((s)*M_PI/180)
 
-const double HORIZONTAL_ANGLE = 60.0;
-const double HORIZONTAL_FOV = 60.0 * M_PI / 180.0;
-const double VERTICAL_FOV = HORIZONTAL_FOV * (IMAGE_HEIGHT / (double) IMAGE_WIDTH);
+constexpr double HORIZONTAL_ANGLE = 60.0;
+constexpr double HORIZONTAL_FOV = 60.0 * M_PI / 180.0;
+constexpr double VERTICAL_FOV = HORIZONTAL_FOV * (IMAGE_HEIGHT / (double) IMAGE_WIDTH);
 
 using namespace std;
 using namespace cv;
 
 
-// receive_USB::receive_USB() : Node("USB_pub") {
-//     color_lower_ = Scalar(0, 0, 0);
-//     color_upper_ = Scalar(255, 255, 255);
-//     usb_camera_ = std::make_shared<usb_camera::USBCamera>(2);
-//     usb_camera_->OpenCameraDevice();
-//     usb_camera_->SetExposure(150);
-//     pub_ = this->create_publisher<sensor_msgs::msg::Image>("/camera/camera/color/image_raw", 10);
-//     timer_ = this->create_wall_timer(
-//         std::chrono::milliseconds(30),
-//         std::bind(&receive_USB::callback, this)
-//     );
-// }
-//
-// void receive_USB::callback() {
-//     sensor_msgs::msg::Image img_msg;
-//     cv::Mat frame;
-//
-//     frame = usb_camera_->GetFrame();
-//     image_ = frame.clone();
-//     Receive_Keypoint();
-//     cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
-//     img_msg.encoding = "rgb8";
-//     img_msg.header.frame_id = "camera";
-//     img_msg.width = frame.cols;
-//     img_msg.height = frame.rows;
-//     img_msg.step = frame.step;
-//
-//     size_t size = frame.step * frame.rows;
-//     img_msg.data.resize(size);
-//     memcpy(&img_msg.data[0], frame.data, size);
-//
-//     img_msg.header.stamp = rclcpp::Clock().now();
-//
-//     pub_->publish(img_msg);
-// }
-//
-// cv::Point2f receive_USB::Receive_Keypoint() {
-//     Mat hsv, mask;
-//     image_ = usb_camera_->GetFrame();
-//     cvtColor(image_, hsv, COLOR_BGR2HSV);
-//     inRange(hsv, color_lower_, color_upper_, mask);
-//
-//     Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(5, 5));
-//     erode(mask, mask, kernel);
-//     dilate(mask, mask, kernel);
-//
-//     vector<vector<Point> > contours;
-//     findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
-//
-//     vector<Point> max_contours;
-//     double max_contour_score = 200;
-//
-//     for (size_t i = 0; i < contours.size(); i++) {
-//         if (contourArea(contours[i]) > max_contour_score) {
-//             max_contour_score = contours[i].size();
-//             max_contours = contours[i];
-//         }
-//
-//         Rect bounding_rect = boundingRect(max_contours);
-//
-//         rectangle(image_, bounding_rect, Scalar(0, 255, 0), 2);
-//
-//         putText(image_, "Blue Object", Point(bounding_rect.x, bounding_rect.y - 10),
-//                 FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
-//     }
-//
-//     Point2f output;
-//     output.x = (max_contours.at(0).x + max_contours.at(2).x) / 2;
-//     output.y = (max_contours.at(0).y + max_contours.at(1).y) / 2;
-//     imshow("11111", image_);
-//     waitKey(30);
-//     return output;
-// }
-
-///--------------------------------------------------------------------------------------------------------------
-usb_camera::USBFactor::USBFactor() {
+receive_USB::receive_USB() : Node("USB_pub") {
     color_lower_ = Scalar(0, 0, 0);
-    color_upper_ = Scalar(255, 255, 255);
+    color_upper_ = Scalar(180, 255, 255);
     usb_camera_ = std::make_shared<usb_camera::USBCamera>(2);
     usb_camera_->OpenCameraDevice();
-    usb_camera_->SetExposure(150);
+    usb_camera_->SetExposure(300);
+    pub_ = this->create_publisher<sensor_msgs::msg::Image>("/camera/camera/color/image_raw", 10);
+    timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(30),
+        std::bind(&receive_USB::callback, this)
+    );
 }
 
-cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
-    cv::Mat hsv, mask;
+void receive_USB::callback() {
+    sensor_msgs::msg::Image img_msg;
+    cv::Mat frame;
+
+    frame = usb_camera_->GetFrame();
+    image_ = frame.clone();
+    Receive_Keypoint();
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+    img_msg.encoding = "rgb8";
+    img_msg.header.frame_id = "camera";
+    img_msg.width = frame.cols;
+    img_msg.height = frame.rows;
+    img_msg.step = frame.step;
+
+    size_t size = frame.step * frame.rows;
+    img_msg.data.resize(size);
+    memcpy(&img_msg.data[0], frame.data, size);
+
+    img_msg.header.stamp = rclcpp::Clock().now();
+
+    pub_->publish(img_msg);
+}
+
+cv::Point2f receive_USB::Receive_Keypoint() {
+    Mat hsv, mask;
     image_ = usb_camera_->GetFrame();
     cvtColor(image_, hsv, COLOR_BGR2HSV);
     inRange(hsv, color_lower_, color_upper_, mask);
@@ -117,10 +70,10 @@ cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
     vector<Point> max_contours;
     double max_contour_score = 200;
 
-    for (const auto & contour : contours) {
-        if (contourArea(contour) > max_contour_score) {
-            max_contour_score = contour.size();
-            max_contours = contour;
+    for (size_t i = 0; i < contours.size(); i++) {
+        if (contourArea(contours[i]) > max_contour_score) {
+            max_contour_score = contours[i].size();
+            max_contours = contours[i];
         }
 
         Rect bounding_rect = boundingRect(max_contours);
@@ -131,10 +84,64 @@ cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
                 FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
     }
 
-    Point2d output;
-    output.x = static_cast<double>(max_contours.at(0).x + max_contours.at(2).x) / 2;
-    output.y = static_cast<double>(max_contours.at(0).y + max_contours.at(1).y) / 2;
+    Point2f output;
+    output.x = (max_contours.at(0).x + max_contours.at(2).x) / 2;
+    output.y = (max_contours.at(0).y + max_contours.at(1).y) / 2;
+    imshow("11111", image_);
+    waitKey(30);
+    return output;
+}
 
+///--------------------------------------------------------------------------------------------------------------
+usb_camera::USBFactor::USBFactor() {
+    // color_lower_ = Scalar(168, 68, 82);
+    // color_upper_ = Scalar(180, 196, 210);
+    color_lower_ = Scalar(68, 73, 112);
+    color_upper_ = Scalar(86, 181, 255);
+    usb_camera_ = std::make_shared<usb_camera::USBCamera>(2);
+    usb_camera_->OpenCameraDevice();
+    usb_camera_->SetExposure(300);
+}
+
+cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
+    cv::Mat hsv, mask;
+    image_ = usb_camera_->GetFrame();
+    cvtColor(image_, hsv, COLOR_BGR2HSV);
+    inRange(hsv, color_lower_, color_upper_, mask);
+
+    Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(8, 5));
+    erode(mask, mask, kernel);
+    dilate(mask, mask, kernel);
+
+    vector<vector<Point> > contours;
+    findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+
+    vector<Point> max_contours;
+    double max_contour_score = 200;
+
+    for (const auto &contour: contours) {
+        if (contourArea(contour) > max_contour_score) {
+            max_contour_score = contour.size();
+            max_contours = contour;
+        }
+
+        Rect bounding_rect = boundingRect(max_contours);
+
+        rectangle(image_, bounding_rect, Scalar(0, 255, 0), 2);
+
+        putText(image_, "Red_cross", Point(bounding_rect.x, bounding_rect.y - 10),
+                FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
+    }
+
+    Point2d output;
+    if (max_contours.empty()) {
+        output.x = 0;
+        output.y = 0;
+    } else {
+        output.x = static_cast<double>(max_contours.at(0).x + max_contours.at(2).x) / 2;
+        output.y = static_cast<double>(max_contours.at(0).y + max_contours.at(1).y) / 2;
+    }
+    imshow("hsv_", mask);
     imshow("11111", image_);
     waitKey(30);
     return output;
@@ -148,10 +155,12 @@ Point2d usb_camera::USBFactor::Transform_Image_TO_Real(cv::Point2d &image_point,
     double length;
     double cam_pitch;
     double real_x, real_y;
+
+/// --------------------------------转换在这里转的--------------------------------------------
     double w = pose.transform.rotation.w;
-    double x = pose.transform.rotation.x;
-    double y = pose.transform.rotation.y;
-    double z = pose.transform.rotation.z;
+    double z = pose.transform.rotation.x;
+    double x = pose.transform.rotation.y;
+    double y = pose.transform.rotation.z;
 
     std::cerr << "w=" << w << "  x=" << x << "  y=" << y << "  z=" << z << std::endl;
 
@@ -181,10 +190,11 @@ Point2d usb_camera::USBFactor::Transform_Image_TO_Real(cv::Point2d &image_point,
 
     //相机相对于无人机的固定旋转
     //绕X轴旋转
-    cam_pitch = M_PI / 6; // -30度
+    cam_pitch = -M_PI / 4; // -30度
+    //cam_pitch = 0;
 
-    R_DC = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX()) // roll
-           * Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitY()) // pitch
+    R_DC = Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitX()) // roll
+           * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) // pitch
            * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ()); // yaw
 
     //TFDebug tf2("camera","plane",R_DC);

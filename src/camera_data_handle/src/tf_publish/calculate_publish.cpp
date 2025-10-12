@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
 
 #ifndef RVIZ_DEBUG
     rclcpp::spin(std::make_shared<camera::Calculate_Publisher>());
-    rclcpp::spin(std::make_shared<camera::Detect_Publisher>());
+    //rclcpp::spin(std::make_shared<camera::Detect_Publisher>());
 #endif
 
     rclcpp::shutdown();

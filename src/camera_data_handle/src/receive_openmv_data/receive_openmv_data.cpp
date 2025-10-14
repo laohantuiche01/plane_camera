@@ -4,11 +4,10 @@
 #include "tf2/convert.hpp"
 #include "tf2_eigen/tf2_eigen.hpp"
 
+#define OPENMV_NULL_ERROR 641
 
-#define OPENMV_NULL_ERROR 321
-
-#define IMAGE_WIDTH 320
-#define IMAGE_HEIGHT 240
+#define IMAGE_WIDTH 640
+#define IMAGE_HEIGHT 480
 
 #define HORIZON_X 32
 #define HORIZON_Z 23
@@ -263,7 +262,7 @@ cv::Point2d CalculateTarget::Transform_Image_TO_Real(cv::Point2d &image_point,
 
     //相机相对于无人机的固定旋转
     //绕X轴旋转
-    cam_pitch = M_PI / 6; // -30度
+    cam_pitch = M_PI / 4; // -30度
 
     R_DC = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX()) // roll
            * Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitY()) // pitch

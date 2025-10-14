@@ -1,6 +1,6 @@
 #include "../../include/receive_USB_camera/receive_USB_camera.hpp"
 
-#define OPENMV_NULL_ERROR 321
+#define OPENMV_NULL_ERROR 641
 
 #define IMAGE_WIDTH 640
 #define IMAGE_HEIGHT 480
@@ -9,6 +9,8 @@
 #define HORIZON_Z 18.4
 
 #define INPUT_ANGLE(s) ((s)*M_PI/180)
+#define STR(s) #s
+#define MACRO_TO_STR(s) STR(s)
 
 constexpr double HORIZONTAL_ANGLE = 60.0;
 constexpr double HORIZONTAL_FOV = 60.0 * M_PI / 180.0;
@@ -94,13 +96,13 @@ cv::Point2f receive_USB::Receive_Keypoint() {
 
 ///--------------------------------------------------------------------------------------------------------------
 usb_camera::USBFactor::USBFactor() {
-    // color_lower_ = Scalar(168, 68, 82);
-    // color_upper_ = Scalar(180, 196, 210);
-    color_lower_ = Scalar(68, 73, 112);
-    color_upper_ = Scalar(86, 181, 255);
+    color_lower_ = Scalar(168, 68, 82);
+    color_upper_ = Scalar(180, 255, 210);
+    // color_lower_ = Scalar(68, 73, 112);
+    // color_upper_ = Scalar(86, 181, 255);
     usb_camera_ = std::make_shared<usb_camera::USBCamera>(2);
     usb_camera_->OpenCameraDevice();
-    usb_camera_->SetExposure(300);
+    usb_camera_->SetExposure(200);
 }
 
 cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
@@ -109,7 +111,7 @@ cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
     cvtColor(image_, hsv, COLOR_BGR2HSV);
     inRange(hsv, color_lower_, color_upper_, mask);
 
-    Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(8, 5));
+    Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(5, 5));
     erode(mask, mask, kernel);
     dilate(mask, mask, kernel);
 
@@ -117,31 +119,157 @@ cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
     findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
     vector<Point> max_contours;
-    double max_contour_score = 200;
+    double max_contour_score = 100;
 
     for (const auto &contour: contours) {
         if (contourArea(contour) > max_contour_score) {
             max_contour_score = contour.size();
             max_contours = contour;
         }
-
-        Rect bounding_rect = boundingRect(max_contours);
-
-        rectangle(image_, bounding_rect, Scalar(0, 255, 0), 2);
-
-        putText(image_, "Red_cross", Point(bounding_rect.x, bounding_rect.y - 10),
-                FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
     }
+
+    Rect bounding_rect = boundingRect(max_contours);
+
+    rectangle(image_, bounding_rect, Scalar(0, 255, 0), 2);
+
+    putText(image_, "Red_cross", Point(bounding_rect.x, bounding_rect.y - 10),
+            FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
 
     Point2d output;
     if (max_contours.empty()) {
-        output.x = 0;
-        output.y = 0;
+        output.x = OPENMV_NULL_ERROR;
+        output.y = OPENMV_NULL_ERROR;
     } else {
-        output.x = static_cast<double>(max_contours.at(0).x + max_contours.at(2).x) / 2;
-        output.y = static_cast<double>(max_contours.at(0).y + max_contours.at(1).y) / 2;
+        output.x = static_cast<double>(bounding_rect.x + static_cast<double>(bounding_rect.width) / 2);
+        output.y = static_cast<double>(bounding_rect.y + static_cast<double>(bounding_rect.height) / 2);
     }
-    imshow("hsv_", mask);
+    //
+    ///-------------------------------------------------------------------------
+    //     cv::Mat templateImage = cv::imread(MACRO_TO_STR(PROJECT_PATH)"/video/Red.jpg");
+    //     cv::Mat hsvImage, hsvTemplate;
+    //     cv::cvtColor(image_, hsvImage, cv::COLOR_BGR2HSV);
+    //     cv::cvtColor(templateImage, hsvTemplate, cv::COLOR_BGR2HSV);
+    //
+    //     // 定义红色在HSV中的范围（红色有两个区间，这里选取其中一个主要区间）
+    //     cv::Scalar lowerRed = cv::Scalar(0, 20, 230);
+    //     cv::Scalar upperRed = cv::Scalar(20, 255, 255);
+    //
+    //     // 根据HSV范围创建掩码，筛选出红色区域
+    // cv::Mat templateMask;
+    // cv::inRange(hsvImage, lowerRed, upperRed, mask);
+    // cv::inRange(hsvTemplate, lowerRed, upperRed, templateMask);
+    //
+    // // 对掩码进行形态学操作，去除噪声并连接断开的区域
+    // cv::Mat kernel_ = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));
+    // cv::morphologyEx(mask, mask, cv::MORPH_OPEN, kernel_);
+    // cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel_);
+    // cv::morphologyEx(templateMask, templateMask, cv::MORPH_OPEN, kernel_);
+    // cv::morphologyEx(templateMask, templateMask, cv::MORPH_CLOSE, kernel_);
+    //
+    // // 提取原始图像和模板图像中红色区域的ROI（感兴趣区域）
+    // cv::Mat imageROI, templateROI;
+    // image_.copyTo(imageROI, mask);
+    // templateImage.copyTo(templateROI, templateMask);
+    //
+    // if (imageROI.empty() || templateROI.empty()) {
+    //     std::cerr << "ROI为空，无法进行特征检测" << std::endl;
+    //     return {0, 0};
+    // }
+    //
+    // // 转换为灰度图，用于特征检测
+    // cv::Mat grayImageROI, grayTemplateROI;
+    // cv::cvtColor(imageROI, grayImageROI, cv::COLOR_BGR2GRAY);
+    // cv::cvtColor(templateROI, grayTemplateROI, cv::COLOR_BGR2GRAY);
+    //
+    // // 创建SIFT特征检测器和描述子提取器
+    // cv::Ptr<cv::SIFT> sift = cv::SIFT::create();
+    // std::vector<cv::KeyPoint> keypointsImage, keypointsTemplate;
+    // cv::Mat descriptorsImage, descriptorsTemplate;
+    //
+    // // 检测特征点并计算描述子
+    // sift->detectAndCompute(grayImageROI, cv::Mat(), keypointsImage, descriptorsImage);
+    // sift->detectAndCompute(grayTemplateROI, cv::Mat(), keypointsTemplate, descriptorsTemplate);
+    //
+    // // 特征匹配，使用FLANN匹配器
+    // cv::FlannBasedMatcher matcher;
+    // std::vector<cv::DMatch> matches;
+    // if (!descriptorsImage.empty() && !descriptorsTemplate.empty()) {
+    //     matcher.match(descriptorsTemplate, descriptorsImage, matches);
+    // } else {
+    //     std::cerr << "特征描述子为空，无法进行匹配" << std::endl;
+    //     return {0,0};
+    // }
+    //
+    // // 筛选好的匹配点
+    // double maxDist = 0, minDist = 100;
+    // for (size_t i = 0; i < matches.size(); i++) {
+    //     double dist = matches[i].distance;
+    //     if (dist < minDist) minDist = dist;
+    //     if (dist > maxDist) maxDist = dist;
+    // }
+    // std::vector<cv::DMatch> goodMatches;
+    // for (size_t i = 0; i < matches.size(); i++) {
+    //     if (matches[i].distance < std::max(3 * minDist, 30.0)) {
+    //         goodMatches.push_back(matches[i]);
+    //     }
+    // }
+    //
+    // // 检查匹配点是否有效
+    // if (goodMatches.empty()) {
+    //     std::cerr << "没有有效的匹配点，无法绘制匹配结果" << std::endl;
+    //     return {0, 0};
+    // }
+    //
+    // cv::Point2f targetCenter(0, 0);
+    //
+    // // 绘制匹配结果
+    // cv::Mat matchImage;
+    // cv::drawMatches(templateROI, keypointsTemplate, imageROI, keypointsImage, goodMatches, matchImage,
+    //                 cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+    //
+    // // 如果有足够的好匹配点，计算单应性矩阵并绘制目标位置
+    // if (goodMatches.size() >= 4) {
+    //     std::vector<cv::Point2f> objPoints;
+    //     std::vector<cv::Point2f> scenePoints;
+    //     for (size_t i = 0; i < goodMatches.size(); i++) {
+    //         objPoints.push_back(keypointsTemplate[goodMatches[i].queryIdx].pt);
+    //         scenePoints.push_back(keypointsImage[goodMatches[i].trainIdx].pt);
+    //     }
+    //     cv::Mat homography = cv::findHomography(objPoints, scenePoints, cv::RANSAC);
+    //     if (homography.empty()) {
+    //         std::cerr << "无法计算单应性矩阵" << std::endl;
+    //         return {0, 0};
+    //     }
+    //
+    //     std::vector<cv::Point2f> objCorners(4);
+    //     objCorners[0] = cv::Point2f(0, 0);
+    //     objCorners[1] = cv::Point2f(static_cast<float>(templateROI.cols), 0);
+    //     objCorners[2] = cv::Point2f(static_cast<float>(templateROI.cols), static_cast<float>(templateROI.rows));
+    //     objCorners[3] = cv::Point2f(0, static_cast<float>(templateROI.rows));
+    //     std::vector<cv::Point2f> sceneCorners(4);
+    //
+    //     // 修复perspectiveTransform的使用
+    //     cv::perspectiveTransform(objCorners, sceneCorners, homography);
+    //
+    //     for (int i = 0; i < 4; i++) {
+    //         cv::line(image_, sceneCorners[i], sceneCorners[(i + 1) % 4], cv::Scalar(0, 255, 0), 2);
+    //     }
+    //
+    //     targetCenter.x = (sceneCorners[0].x + sceneCorners[1].x + sceneCorners[2].x + sceneCorners[3].x) / 4.0f;
+    //     targetCenter.y = (sceneCorners[0].y + sceneCorners[1].y + sceneCorners[2].y + sceneCorners[3].y) / 4.0f;
+    //
+    //     // 在图像上标记中心
+    //     cv::circle(image_, targetCenter, 5, cv::Scalar(0, 0, 255), -1); // 红色实心圆标记中心
+    // }
+    //
+    // // 显示结果
+    // //cv::imshow("HSV Mask", mask);
+    // cv::imshow("Template HSV Mask", templateMask);
+    // cv::imshow("Matched Features", matchImage);
+
+    ///_________________________________________________________________________________
+
+    //imshow("hsv_", mask);
     imshow("11111", image_);
     waitKey(30);
     return output;
@@ -156,11 +284,16 @@ Point2d usb_camera::USBFactor::Transform_Image_TO_Real(cv::Point2d &image_point,
     double cam_pitch;
     double real_x, real_y;
 
-/// --------------------------------转换在这里转的--------------------------------------------
+    /// --------------------------------转换在这里转的--------------------------------------------
+    // double w = pose.transform.rotation.w;
+    // double y = pose.transform.rotation.x;
+    // double x = -pose.transform.rotation.y;
+    // double z = pose.transform.rotation.z;
+
     double w = pose.transform.rotation.w;
-    double z = pose.transform.rotation.x;
-    double x = pose.transform.rotation.y;
-    double y = pose.transform.rotation.z;
+    double x = pose.transform.rotation.x;
+    double y = pose.transform.rotation.y;
+    double z = pose.transform.rotation.z;
 
     std::cerr << "w=" << w << "  x=" << x << "  y=" << y << "  z=" << z << std::endl;
 
@@ -191,7 +324,7 @@ Point2d usb_camera::USBFactor::Transform_Image_TO_Real(cv::Point2d &image_point,
     //相机相对于无人机的固定旋转
     //绕X轴旋转
     cam_pitch = -M_PI / 4; // -30度
-    //cam_pitch = 0;
+    //cam_pitch = 0.0;
 
     R_DC = Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitX()) // roll
            * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) // pitch

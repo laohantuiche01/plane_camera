@@ -21,7 +21,7 @@ ament_auto_find_build_dependencies()
 #    message(STATUS "OpenVINO support unabled-----------------------!!!!!!!!!!")
 #endif ()
 
-#add_definitions(-D HIGHT_DEBUG)                 #不接受话题高度,是使用调试高度
+add_definitions(-D HIGHT_DEBUG)                 #不接受话题高度,是使用调试高度
 add_definitions(-D PID_PREDICT_OPEN)            #开启pid算法预测
 #add_definitions(-D KALMAN_OPEN_DEBUG)           #开启卡尔曼跟踪目标调试
 #add_definitions(-D KALMAN_OPEN)                 #开启卡尔曼跟踪目标

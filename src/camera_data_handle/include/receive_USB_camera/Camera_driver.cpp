@@ -65,3 +65,20 @@ bool usb_camera::USBCamera::SetGain(int gain) {
     cap_.set(CAP_PROP_GAIN, gain);
     return true;
 }
+
+bool usb_camera::USBCamera::SetResolution(int width, int height) {
+    if (If_OpenCameraDevice) {
+        return false;
+    }
+    cap_.set(CAP_PROP_FRAME_HEIGHT, height);
+    cap_.set(CAP_PROP_FRAME_WIDTH, width);
+    return true;
+}
+
+bool usb_camera::USBCamera::SetFPS(int fps) {
+    if (!If_OpenCameraDevice) {
+        return false;
+    }
+    cap_.set(CAP_PROP_FPS, fps);
+    return true;
+}

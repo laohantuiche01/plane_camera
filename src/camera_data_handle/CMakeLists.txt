@@ -21,12 +21,13 @@ ament_auto_find_build_dependencies()
 #    message(STATUS "OpenVINO support unabled-----------------------!!!!!!!!!!")
 #endif ()
 
+add_definitions(-D USB_USE_YOLO)                #usb相机使用yolo检测目标
 add_definitions(-D HIGHT_DEBUG)                 #不接受话题高度,是使用调试高度
-add_definitions(-D PID_PREDICT_OPEN)            #开启pid算法预测
+#add_definitions(-D PID_PREDICT_OPEN)            #开启pid算法预测
 #add_definitions(-D KALMAN_OPEN_DEBUG)           #开启卡尔曼跟踪目标调试
 #add_definitions(-D KALMAN_OPEN)                 #开启卡尔曼跟踪目标
 #add_definitions(-D RVIZ_DEBUG)                  #使用rviz显示出坐标变换
-#add_definitions(-D VIDEO_WRITE)                 #开启视频记录
+add_definitions(-D VIDEO_WRITE)                 #开启视频记录
 #add_definitions(-D FPS_VISABLE_OPEN)            #开启fps显示
 #add_definitions(-D YOLOV8_DETECTOR_OFF)         #关闭YOLOv8检测
 #add_definitions(-D NO_IMAGE)                    #关闭图像显示
@@ -83,6 +84,7 @@ add_and_install_executable(camera_debug
 add_and_install_executable(backup_debug
         SRCS    src/recieve_data/detector_backup.cpp
                 src/backup_debug.cpp
+                src/recieve_data/Yolov8Detector.cpp
         DEPS    rclcpp
                 OpenCV
                 cv_bridge
@@ -90,6 +92,7 @@ add_and_install_executable(backup_debug
                 tf2_ros
                 tf2_geometry_msgs
         LIBS    OpenCL
+                openvino::runtime
 )
 
 #add_and_install_executable(predict_debug
@@ -114,6 +117,7 @@ add_and_install_executable(USB_camera
         SRCS    include/receive_USB_camera/Camera_driver.cpp
                 src/receive_USB_camera/receive_USB_camera.cpp
                 src/receive_USB_camera/USB_test.cpp
+                src/recieve_data/Yolov8Detector.cpp
         DEPS    OpenCV
                 tf2
                 rclcpp
@@ -121,6 +125,8 @@ add_and_install_executable(USB_camera
                 tf2_ros
                 robot_interfaces
                 sensor_msgs
+        LIBS    OpenCL
+                openvino::runtime
 )
 
 add_and_install_executable(receive_data
@@ -146,8 +152,10 @@ add_and_install_executable(receive_data
 
 add_and_install_executable(detect_publish
         SRCS    src/tf_publish/tf_publisher.cpp
-                #src/receive_openmv_data/receive_openmv_data.cpp
                 src/tf_publish/detect_publish.cpp
+                src/recieve_data/Yolov8Detector.cpp
+                src/receive_USB_camera/receive_USB_camera.cpp
+                include/receive_USB_camera/Camera_driver.cpp
         DEPS    rclcpp
                 OpenCV
                 tf2
@@ -156,6 +164,8 @@ add_and_install_executable(detect_publish
                 tf2_geometry_msgs
                 robot_interfaces
                 sensor_msgs
+        LIBS    OpenCL
+                openvino::runtime
 )
 
 add_and_install_executable(calculate_publish
@@ -164,6 +174,7 @@ add_and_install_executable(calculate_publish
                 include/receive_USB_camera/Camera_driver.cpp
                 src/tf_publish/calculate_publish.cpp
                 src/receive_USB_camera/receive_USB_camera.cpp
+                src/recieve_data/Yolov8Detector.cpp
         DEPS    rclcpp
                 tf2
                 OpenCV
@@ -172,6 +183,8 @@ add_and_install_executable(calculate_publish
                 tf2_geometry_msgs
                 robot_interfaces
                 sensor_msgs
+        LIBS    OpenCL
+                openvino::runtime
 )
 
 if (BUILD_TESTING)

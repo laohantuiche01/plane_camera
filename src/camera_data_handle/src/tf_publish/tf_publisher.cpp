@@ -215,6 +215,7 @@ void camera::Calculate_Publisher::publish_transform() {
 
     //cv::Point2d guess_point_ = calculate_target_class_.get()->Handle_Openmv_Data(*pose_);
     cv::Point2d output = usb_factor_.Receive_Keypoint();
+
     cv::Point2d guess_point_ = usb_factor_.Transform_Image_TO_Real(output, *pose_);
 
     if (output.x == OPENMV_NULL_ERROR && output.y == OPENMV_NULL_ERROR) {

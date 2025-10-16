@@ -7,7 +7,9 @@
 #include "Camera_driver.hpp"
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <opencv2/opencv.hpp>
+#include "../../include/Yolov8Detector/Yolov8Detector.h"
 
+//调试时发送出图像信息
 class receive_USB : public rclcpp::Node {
 public:
     receive_USB();
@@ -25,7 +27,13 @@ private:
     cv::Scalar color_upper_;
 };
 
+
+//得到图像进行筛选以得到结果
 namespace usb_camera {
+    inline std::vector<std::string> ClassNames = {
+        "tank", "Red_cross"
+    };
+
     class USBFactor {
     public:
         explicit USBFactor();
@@ -40,6 +48,10 @@ namespace usb_camera {
         cv::Mat image_;
         cv::Scalar color_lower_;
         cv::Scalar color_upper_;
+#ifdef USB_USE_YOLO
+        Yolov8::YOLOv8Detector detector_;
+        int times;
+#endif
     };
 }
 

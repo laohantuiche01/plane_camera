@@ -3,13 +3,6 @@
 
 #define THE_TRANSFORM_USE_PREDICT
 #include "../receive_USB_camera/receive_USB_camera.hpp"
-//#define THE_TRANSFORM_USE_ACCELERATE
-
-#ifdef THE_TRANSFORM_USE_PREDICT
-#ifdef THE_TRANSFORM_USE_ACCELERATE
-#error "You cannot define both ! ! !"
-#endif
-#endif
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>   //高度的消息类型
@@ -19,6 +12,7 @@
 #include "robot_interfaces/msg/image_location.hpp"
 #include "../receive_USB_camera/receive_USB_camera.hpp"
 #include <opencv4/opencv2/opencv.hpp>
+#include "../Yolov8Detector/Yolov8Detector.h"
 
 namespace camera {
     enum Target {

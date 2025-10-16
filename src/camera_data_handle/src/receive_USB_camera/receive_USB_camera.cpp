@@ -25,7 +25,8 @@ receive_USB::receive_USB() : Node("USB_pub") {
     color_upper_ = Scalar(180, 255, 255);
     usb_camera_ = std::make_shared<usb_camera::USBCamera>(2);
     usb_camera_->OpenCameraDevice();
-    usb_camera_->SetExposure(300);
+    usb_camera_->SetExposure(150);
+    //usb_camera_->SetResolution(1280, 720);
     pub_ = this->create_publisher<sensor_msgs::msg::Image>("/camera/camera/color/image_raw", 10);
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(30),
@@ -95,27 +96,34 @@ cv::Point2f receive_USB::Receive_Keypoint() {
 }
 
 ///--------------------------------------------------------------------------------------------------------------
-usb_camera::USBFactor::USBFactor() {
+usb_camera::USBFactor::USBFactor()
+#ifdef USB_USE_YOLO
+    : detector_(MACRO_TO_STR(PROJECT_PATH)"/model/USB_best.onnx", ClassNames),times(0)
+#endif
+{
     color_lower_ = Scalar(168, 68, 82);
     color_upper_ = Scalar(180, 255, 210);
     color_lower_ = Scalar(20, 0, 0);
-    color_upper_ = Scalar(180, 255, 255);
+    color_upper_ = Scalar(160, 255, 255);
     usb_camera_ = std::make_shared<usb_camera::USBCamera>(2);
     usb_camera_->OpenCameraDevice();
-    usb_camera_->SetExposure(300);
+    usb_camera_->SetExposure(150);
+    usb_camera_->SetResolution(640, 480);
+    usb_camera_->SetFPS(15);
 }
 
 cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
-    cv::Mat hsv, mask,mask_b, grey;
+#ifndef USB_USE_YOLO
+    cv::Mat hsv, mask, mask_b, grey;
     image_ = usb_camera_->GetFrame();
     cvtColor(image_, hsv, COLOR_BGR2HSV);
     cvtColor(image_, grey, COLOR_BGR2GRAY);
 
     inRange(hsv, color_lower_, color_upper_, mask);
-    //inRange(hsv, Scalar(0,136,0), Scalar(180,255,255), mask_b);
+    inRange(hsv, Scalar(0, 140, 100), Scalar(180, 230, 255), mask_b);
 
     bitwise_not(mask, mask);
-    //bitwise_and(mask,mask_b,mask);
+    bitwise_and(mask, mask_b, mask);
 
     Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(3, 3));
     erode(mask, mask, kernel);
@@ -127,7 +135,7 @@ cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
     findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
     vector<Point> max_contours;
-    double max_contour_score = 1;
+    double max_contour_score = 100;
 
     for (const auto &contour: contours) {
         Rect bounding_rect = boundingRect(contour);
@@ -143,7 +151,7 @@ cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
     double rect_h = bounding_rect.height;
 
     if (rect_h / rect_w < 1 / 2) {
-        return {OPENMV_NULL_ERROR,OPENMV_NULL_ERROR};
+        return {OPENMV_NULL_ERROR, OPENMV_NULL_ERROR};
     }
     /// -----------------------------------------------------------------------------------------------------------------
 
@@ -155,14 +163,14 @@ cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
     double min_way = 641;
     Point2f centor(bounding_rect.x + bounding_rect.width / 2, bounding_rect.y + bounding_rect.height / 2);
 
-    goodFeaturesToTrack(mask,coners,50,0.7,2);
-    cout<<coners.size()<<endl;
+    goodFeaturesToTrack(mask, coners, 50, 0.7, 2);
+    cout << coners.size() << endl;
 
-    if (coners.size()>30) {
+    if (coners.size() > 30) {
         imshow("22222", mask);
         imshow("11111", image_);
         waitKey(30);
-        return {OPENMV_NULL_ERROR,OPENMV_NULL_ERROR};
+        return {OPENMV_NULL_ERROR, OPENMV_NULL_ERROR};
     }
 
     // if ( max_contours.size() > 64) {
@@ -211,6 +219,35 @@ cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
     imshow("11111", image_);
     waitKey(30);
     return output;
+#endif
+#ifdef  USB_USE_YOLO
+    times++;
+    if (times<30) {
+        return {OPENMV_NULL_ERROR, OPENMV_NULL_ERROR};
+    }
+
+    image_ = usb_camera_->GetFrame();
+
+    std::vector<Yolov8::Detection> detections = detector_.detect(image_);
+    //std::vector<Yolov8::Detection> detections ;
+
+    if (detections.empty()) {
+        imshow("22222", image_);
+        waitKey(30);
+        return {OPENMV_NULL_ERROR, OPENMV_NULL_ERROR};
+    }
+
+    cv::Point2f point;
+    point.x = detections[0].box.x + detections[0].box.width / 2;
+    point.y = detections[0].box.y + detections[0].box.height / 2;
+    circle(image_, point, 10, Scalar(255, 0, 0), -1);
+
+    imshow("22222", image_);
+    waitKey(30);
+
+    return point;
+
+#endif
 }
 
 

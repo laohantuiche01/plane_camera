@@ -20,6 +20,9 @@ namespace usb_camera {
 
         bool SetGain(int gain);
 
+        bool SetResolution(int width, int height);
+
+        bool SetFPS(int fps);
     private:
         cv::Mat frame_{};
         cv::VideoCapture cap_;

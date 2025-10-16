@@ -12,6 +12,7 @@
 #include <robot_interfaces/msg/measure.hpp>
 #include <robot_interfaces/msg/kalman_output.hpp>
 #include "opencv2/videoio.hpp"
+#include <std_msgs/msg/bool.hpp>
 
 #include "../PID_predect/pid_predict.hpp"
 #include "../Yolov8Detector/Yolov8Detector.h"
@@ -37,10 +38,11 @@ namespace camera {
     private:
         void imageCallback(sensor_msgs::msg::Image::ConstSharedPtr msg);
 
-        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription_;
         rclcpp::Publisher<robot_interfaces::msg::ImageLocation>::SharedPtr position_pub_;
+        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription_;
         rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr pose_sub_;
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr twist_sub_; //接受速度的
+        rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr receive_d435_start_;
         rclcpp::TimerBase::SharedPtr timer_;
         std::vector<std::string> output_names_;
         std::vector<std::string> class_names_;
@@ -53,6 +55,7 @@ namespace camera {
         int fps_sum_{0};
         bool if_do_tracking_{false}; //如果检测或者跟踪都失效时设置为false
         bool has_received_{false};
+        bool if_can_start_d435{false};
         std::string model_path_;
         cv::TickMeter fps_timer_;
         cv::dnn::Net net_;

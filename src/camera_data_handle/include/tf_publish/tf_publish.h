@@ -6,6 +6,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>   //高度的消息类型
+#include <std_msgs/msg/bool.hpp>
 
 #include "tf2_ros/transform_broadcaster.h"
 #include "../receive_openmv_data/receive_openmv_data.h"
@@ -95,7 +96,7 @@ namespace camera {
         int tf2_reflash_num_;
     };
 
-    ///继承的猜测openmv的类----------------------------------------------------------------------
+    ///继承的猜测openmv的类----------------------------------------------------------------------------------------------------------
     class Calculate_Publisher : public TF_Publisher_Base, public rclcpp::Node {
     public:
 #ifdef RVIZ_DEBUG
@@ -110,6 +111,10 @@ namespace camera {
     private:
         void publish_transform() override;
 
+        rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr receive_d435_start_;
+
+        bool if_can_start_USB_{false};
+
 #ifndef HIGHT_DEBUG
         //接受高度
         rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr sub_pose_;
@@ -118,7 +123,7 @@ namespace camera {
 #endif
 
         //储存位姿
-        geometry_msgs::msg::TransformStamped_<std::allocator<void>> *pose_;
+        geometry_msgs::msg::TransformStamped_<std::allocator<void> > *pose_;
 
         //自定义接口信息发送
         rclcpp::Publisher<robot_interfaces::msg::ImageLocation>::SharedPtr position_pub_;
@@ -136,7 +141,6 @@ namespace camera {
         //传递的指针
         std::shared_ptr<TFDebug> tf_debug_;
 #endif
-
     };
 }
 

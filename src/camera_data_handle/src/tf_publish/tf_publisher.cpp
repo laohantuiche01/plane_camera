@@ -105,12 +105,12 @@ void camera::Detect_Publisher::position_callback(const robot_interfaces::msg::Im
 
 #ifdef THE_TRANSFORM_USE_PREDICT
     //防止偏移位置过大
-    pub_pos_.image_x = x * 42 *height_/ 20700;
-    if (pub_pos_.image_x>MAX_STEP) {
+    pub_pos_.image_x = x * 42 * height_ / 20700;
+    if (pub_pos_.image_x > MAX_STEP) {
         pub_pos_.image_x = MAX_STEP;
     }
-    pub_pos_.image_y = y * 42 *height_/ 20700;
-    if (pub_pos_.image_y>MAX_STEP) {
+    pub_pos_.image_y = y * 42 * height_ / 20700;
+    if (pub_pos_.image_y > MAX_STEP) {
         pub_pos_.image_y = MAX_STEP;
     }
     pub_pos_.id = status;
@@ -156,6 +156,13 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
 #endif
 
     position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/robot/usb_camera", 10);
+    receive_d435_start_=this->create_subscription<std_msgs::msg::Bool>(
+        "/camera/choose",
+        10,
+            [this](const std_msgs::msg::Bool::ConstSharedPtr msg) {
+                if_can_start_USB_ = msg->data;
+            }
+        );
 
 #ifndef HIGHT_DEBUG
     sub_pose_ = this->create_subscription<geometry_msgs::msg::TransformStamped>(
@@ -171,10 +178,10 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
     pose_ = new geometry_msgs::msg::TransformStamped_<std::allocator<void> >();
 
 #ifdef HIGHT_DEBUG
-    pose_->transform.rotation.w =  0.966;
+    pose_->transform.rotation.w = 1;
     pose_->transform.rotation.x = 0;
     pose_->transform.rotation.y = 0;
-    pose_->transform.rotation.z = 0.259;
+    pose_->transform.rotation.z = 0;
     pose_->transform.translation.x = 0;
     pose_->transform.translation.y = 0;
     pose_->transform.translation.z = 0.31 - 0.3;
@@ -212,6 +219,8 @@ void camera::Calculate_Publisher::publish_transform() {
         initialize_transform(pub_pos_);
         transform_initialized = true;
     }
+    //受到false的时候不执行神经网络
+    if (if_can_start_USB_){return;}
 
     //cv::Point2d guess_point_ = calculate_target_class_.get()->Handle_Openmv_Data(*pose_);
     cv::Point2d output = usb_factor_.Receive_Keypoint();
@@ -232,9 +241,8 @@ void camera::Calculate_Publisher::publish_transform() {
         //     guess_point_.y = guess_y;
         //     use_this_or_camera_pub_msg_++;
         // }
-        pub_pos_.id=UNKNOW;
-    }
-    else {
+        pub_pos_.id = UNKNOW;
+    } else {
         pub_pos_.image_x = guess_point_.x;
         pub_pos_.image_y = guess_point_.y;
         pub_pos_.id = RED_CROSS;

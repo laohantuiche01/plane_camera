@@ -126,12 +126,11 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
     // this->get_parameter("nms_threshold_", nms_threshold_);
     position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/camera/target/position", 10);
 
-    twist_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-        "/robot/v",
+    receive_d435_start_ = this->create_subscription<std_msgs::msg::Bool>(
+        "/camera/choose",
         10,
-        [this](const geometry_msgs::msg::Twist::ConstSharedPtr msg) {
-            twist_.angular = msg->angular;
-            twist_.linear = msg->linear;
+        [this](const std_msgs::msg::Bool::ConstSharedPtr &msg) {
+            if_can_start_d435 = msg->data;
         }
     );
     pose_sub_ = this->create_subscription<geometry_msgs::msg::TransformStamped>(
@@ -169,6 +168,7 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
 
 #ifdef FPS_VISABLE_OPEN
         fps_timer_.start(); //计时以计算帧率
+
 #endif
 
         cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGB8);
@@ -179,6 +179,9 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
 #ifdef VIDEO_WRITE
         writer_.write(image);
 #endif
+
+        //收到错的，不进行目标检测与识别 受到true时不执行检测代码
+        if (!if_can_start_d435) { return; }
 
 #ifndef YOLOV8_DETECTOR_OFF
         //目标检测接口

@@ -9,6 +9,11 @@
 #include <opencv2/opencv.hpp>
 #include "../../include/Yolov8Detector/Yolov8Detector.h"
 
+struct DetectVector {
+    cv::Point point;
+    int ClassId;
+};
+
 //调试时发送出图像信息
 class receive_USB : public rclcpp::Node {
 public:
@@ -31,15 +36,20 @@ private:
 //得到图像进行筛选以得到结果
 namespace usb_camera {
     inline std::vector<std::string> ClassNames = {
-        "tank", "Red_cross"
+        "tank", "Red_cross", "none"
     };
 
     class USBFactor {
     public:
         explicit USBFactor();
+        using DetectorVector = DetectVector;
 
+#ifndef USB_USE_YOLO
         cv::Point2d Receive_Keypoint();
-
+#endif
+#ifdef USB_USE_YOLO
+        std::vector<DetectorVector> Receive_Keypoint();
+#endif
         cv::Point2d Transform_Image_TO_Real(cv::Point2d &image_point,
                                             geometry_msgs::msg::TransformStamped pose);
 

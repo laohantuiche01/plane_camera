@@ -25,7 +25,7 @@ receive_USB::receive_USB() : Node("USB_pub") {
     color_upper_ = Scalar(180, 255, 255);
     usb_camera_ = std::make_shared<usb_camera::USBCamera>(2);
     usb_camera_->OpenCameraDevice();
-    usb_camera_->SetExposure(150);
+    usb_camera_->SetExposure(250);
     //usb_camera_->SetResolution(1280, 720);
     pub_ = this->create_publisher<sensor_msgs::msg::Image>("/camera/camera/color/image_raw", 10);
     timer_ = this->create_wall_timer(
@@ -98,7 +98,7 @@ cv::Point2f receive_USB::Receive_Keypoint() {
 ///--------------------------------------------------------------------------------------------------------------
 usb_camera::USBFactor::USBFactor()
 #ifdef USB_USE_YOLO
-    : detector_(MACRO_TO_STR(PROJECT_PATH)"/model/USB_best.onnx", ClassNames),times(0)
+    : detector_(MACRO_TO_STR(PROJECT_PATH)"/model/USB_best.onnx", ClassNames, 320, 0.4), times(0)
 #endif
 {
     color_lower_ = Scalar(168, 68, 82);
@@ -107,13 +107,12 @@ usb_camera::USBFactor::USBFactor()
     color_upper_ = Scalar(160, 255, 255);
     usb_camera_ = std::make_shared<usb_camera::USBCamera>(2);
     usb_camera_->OpenCameraDevice();
-    usb_camera_->SetExposure(150);
+    usb_camera_->SetExposure(250);
     usb_camera_->SetResolution(640, 480);
     usb_camera_->SetFPS(15);
 }
-
-cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
 #ifndef USB_USE_YOLO
+cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
     cv::Mat hsv, mask, mask_b, grey;
     image_ = usb_camera_->GetFrame();
     cvtColor(image_, hsv, COLOR_BGR2HSV);
@@ -219,11 +218,15 @@ cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
     imshow("11111", image_);
     waitKey(30);
     return output;
+}
+
 #endif
 #ifdef  USB_USE_YOLO
+std::vector<DetectVector> usb_camera::USBFactor::Receive_Keypoint() {
     times++;
-    if (times<30) {
-        return {OPENMV_NULL_ERROR, OPENMV_NULL_ERROR};
+    vector<DetectorVector> output_points;
+    if (times < 30) {
+        return output_points;
     }
 
     image_ = usb_camera_->GetFrame();
@@ -234,26 +237,50 @@ cv::Point2d usb_camera::USBFactor::Receive_Keypoint() {
     if (detections.empty()) {
         imshow("22222", image_);
         waitKey(30);
-        return {OPENMV_NULL_ERROR, OPENMV_NULL_ERROR};
+        return output_points;
     }
 
-    cv::Point2f point;
-    point.x = detections[0].box.x + detections[0].box.width / 2;
-    point.y = detections[0].box.y + detections[0].box.height / 2;
-    circle(image_, point, 10, Scalar(255, 0, 0), -1);
+    for (auto &detection: detections) {
+        DetectorVector detection_vector;
+        Point point;
+        point.x = detection.box.x + detection.box.width / 2;
+        point.y = detection.box.y + detection.box.height / 2;
+
+        circle(image_, point, 6, Scalar(255, 0, 0), -1);
+
+        string label = format("%s: %.2f", ClassNames[detection.classId].c_str(), detection.confidence);
+        int baseLine;
+        Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+        Rect labelRect = Rect(detection.box.x, detection.box.y - labelSize.height - baseLine,
+                              labelSize.width, labelSize.height + baseLine);
+        rectangle(image_, labelRect, Scalar(0, 255, 0), FILLED);
+        putText(image_, label, Point(detection.box.x, detection.box.y - baseLine),
+                FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 0), 1);
+
+        if (detection.classId != 2)
+        //--------------------------------------------------------------------------------------------
+        {
+            detection_vector.point=point;
+            detection_vector.ClassId = detection.classId;
+            output_points.push_back(detection_vector);
+        }
+    }
+
+    // for (auto &point: output_points) {
+    //
+    // }
 
     imshow("22222", image_);
     waitKey(30);
 
-    return point;
-
-#endif
+    return output_points;
 }
+#endif
 
 
 Point2d usb_camera::USBFactor::Transform_Image_TO_Real(cv::Point2d &image_point,
                                                        geometry_msgs::msg::TransformStamped pose) {
-    double height = pose.transform.translation.z + 0.39; // 无人机高度 + 相机安装高度
+    double height = pose.transform.translation.z + 0.15; // 无人机高度 + 相机安装高度
     double theta_x, theta_z;
     double length;
     double cam_pitch;
@@ -298,7 +325,7 @@ Point2d usb_camera::USBFactor::Transform_Image_TO_Real(cv::Point2d &image_point,
 
     //相机相对于无人机的固定旋转
     //绕X轴旋转
-    cam_pitch = -M_PI / 4; // -30度
+    cam_pitch = -M_PI / 3; // -60度
     //cam_pitch = 0.0;
 
     R_DC = Eigen::AngleAxisd(cam_pitch, Eigen::Vector3d::UnitX()) // roll

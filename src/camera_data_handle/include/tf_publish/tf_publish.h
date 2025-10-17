@@ -28,6 +28,10 @@ namespace camera {
         INITIALIZER = 8,
     };
 
+    struct DetectVector {
+        cv::Point point;
+        int ClassId;
+    };
 
     ///基类--------------------------------------------------------------------------------
     class TF_Publisher_Base {
@@ -133,9 +137,6 @@ namespace camera {
 
         //openmv的信息
         geometry_msgs::msg::TransformStamped transform_openmv_;
-
-        //检测到足够次数才能确定
-        uint8_t if_sure_the_target_real_ = 0;
 
 #ifdef RVIZ_DEBUG
         //传递的指针

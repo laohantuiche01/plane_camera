@@ -15,7 +15,7 @@ exit(EXIT_FAILURE);\
 namespace Yolov8 {
     inline std::vector<std::string> defaultClassNames = {
         "H", "tent", "car",
-        "bridge", "pillbox", "tank" , "Red_cross"
+        "bridge", "pillbox", "tank", "Red_cross"
     };
 
     struct Detection {
@@ -37,7 +37,10 @@ namespace Yolov8 {
                                 const std::vector<std::string> &classNames = defaultClassNames,
                                 int imgSize = 160,
                                 float confThreshold = 0.7,
-                                float nmsThreshold = 0.4);
+                                float nmsThreshold = 0.4,
+                                int imgWidth = 640,
+                                int imgHeigh = 480
+        );
 
         void setConfidenceThreshold(float threshold) { confThreshold_ = threshold; }
 
@@ -48,7 +51,6 @@ namespace Yolov8 {
         std::vector<std::vector<double> > drawDetections(cv::Mat &image, const std::vector<Detection> &detections);
 
     private:
-
 #ifdef RUN_THE_FUNCTION_BY_GPU
 
         cl::Platform opencl_platform_;

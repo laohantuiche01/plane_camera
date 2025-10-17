@@ -156,13 +156,13 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
 #endif
 
     position_pub_ = this->create_publisher<robot_interfaces::msg::ImageLocation>("/robot/usb_camera", 10);
-    receive_d435_start_=this->create_subscription<std_msgs::msg::Bool>(
+    receive_d435_start_ = this->create_subscription<std_msgs::msg::Bool>(
         "/camera/choose",
         10,
-            [this](const std_msgs::msg::Bool::ConstSharedPtr msg) {
-                if_can_start_USB_ = msg->data;
-            }
-        );
+        [this](const std_msgs::msg::Bool::ConstSharedPtr msg) {
+            if_can_start_USB_ = msg->data;
+        }
+    );
 
 #ifndef HIGHT_DEBUG
     sub_pose_ = this->create_subscription<geometry_msgs::msg::TransformStamped>(
@@ -184,7 +184,7 @@ camera::Calculate_Publisher::Calculate_Publisher() : Node("Calculate_Publisher")
     pose_->transform.rotation.z = 0;
     pose_->transform.translation.x = 0;
     pose_->transform.translation.y = 0;
-    pose_->transform.translation.z = 0.31 - 0.3;
+    pose_->transform.translation.z = 0.38;
 #endif
     send_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(10),
@@ -199,7 +199,7 @@ void camera::Calculate_Publisher::PoseCallback(geometry_msgs::msg::TransformStam
     double y = pose_->transform.rotation.y;
     double z = pose_->transform.rotation.z;
 
-    double height = pose_->transform.translation.z + 0.39;
+    double height = pose_->transform.translation.z + 0.15;
     height_ = height;
 
     // pose_->transform.rotation.w = -x;
@@ -220,34 +220,39 @@ void camera::Calculate_Publisher::publish_transform() {
         transform_initialized = true;
     }
     //受到false的时候不执行神经网络
-    if (if_can_start_USB_){return;}
-
-    //cv::Point2d guess_point_ = calculate_target_class_.get()->Handle_Openmv_Data(*pose_);
-    cv::Point2d output = usb_factor_.Receive_Keypoint();
-
-    cv::Point2d guess_point_ = usb_factor_.Transform_Image_TO_Real(output, *pose_);
-
-    if (output.x == OPENMV_NULL_ERROR && output.y == OPENMV_NULL_ERROR) {
-        guess_point_.x = 0;
-        guess_point_.y = 0;
-
-        // if (use_this_or_camera_pub_msg_ <= 10) {
-        //     // ------------------------------------------------------------------------------debug(单调openmv)
-        //     //use_this_or_camera_pub_msg_++;
-        // }
-        // //达到十次之后使用d453i当作猜测数据
-        // if (use_this_or_camera_pub_msg_ == 10) {
-        //     guess_point_.x = guess_x;
-        //     guess_point_.y = guess_y;
-        //     use_this_or_camera_pub_msg_++;
-        // }
-        pub_pos_.id = UNKNOW;
-    } else {
-        pub_pos_.image_x = guess_point_.x;
-        pub_pos_.image_y = guess_point_.y;
-        pub_pos_.id = RED_CROSS;
+    if (if_can_start_USB_) {
+        RCLCPP_INFO(this->get_logger(), "Starting USB");
+        return;
     }
 
-    std::cout << guess_point_.x << " " << guess_point_.y << std::endl;
-    position_pub_->publish(pub_pos_);
+    //cv::Point2d guess_point_ = calculate_target_class_.get()->Handle_Openmv_Data(*pose_);
+    //std::vector<DetectVector> _output_points = usb_factor_.Receive_Keypoint();
+    auto _output_points = usb_factor_.Receive_Keypoint();
+    if (_output_points.empty()) {
+        pub_pos_.image_x = 0;
+        pub_pos_.image_y = 0;
+        pub_pos_.id = UNKNOW;
+        //std::cout << pub_pos_.image_x << " " << pub_pos_.image_y << std::endl;
+        RCLCPP_INFO(this->get_logger(), "No Keypoints available");
+        position_pub_->publish(pub_pos_);
+    }
+
+    for (auto &_output_point: _output_points) {
+        cv::Point2d output;
+        output.x = _output_point.point.x;
+        output.y = _output_point.point.y;
+
+        cv::Point2d guess_point_ = usb_factor_.Transform_Image_TO_Real(output, *pose_);
+
+        pub_pos_.image_x = guess_point_.x;
+        pub_pos_.image_y = guess_point_.y;
+
+        if (_output_point.ClassId == 0) {
+            pub_pos_.id = TANK;
+        } else if (_output_point.ClassId == 1) {
+            pub_pos_.id = RED_CROSS;
+        }
+        std::cout << guess_point_.x << " " << guess_point_.y << std::endl;
+        position_pub_->publish(pub_pos_);
+    }
 }

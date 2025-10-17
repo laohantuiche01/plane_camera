@@ -92,10 +92,10 @@ std::string Yolov8::YOLOv8Detector::loadKernelSource(const std::string &filename
 #endif
 
 Yolov8::YOLOv8Detector::YOLOv8Detector(const string &modelPath, const vector<string> &classNames, int imgSize,
-                                       float confThreshold, float nmsThreshold)
+                                       float confThreshold, float nmsThreshold, int imgWidth, int imgHeight)
     : classNames_(classNames), imgSize_(imgSize),
       confThreshold_(confThreshold), nmsThreshold_(nmsThreshold),
-      imgHeight_(480), imgWidth_(640) {
+      imgHeight_(imgHeight), imgWidth_(imgWidth) {
 #ifndef DETECTION_OPENVINO_OPEN
     net_ = readNet(modelPath);
     net_.setPreferableBackend(DNN_BACKEND_OPENCV);

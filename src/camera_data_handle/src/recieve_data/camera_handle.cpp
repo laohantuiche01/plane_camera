@@ -49,7 +49,7 @@ camera::ReceiveData::ReceiveData() : Node("receive_data"),
 #ifdef VIDEO_WRITE
     writer_.open(video_name_,
                  cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
-                 10.0,
+                 15.0,
                  Size(640, 480),
                  true
     );
@@ -181,7 +181,10 @@ void camera::ReceiveData::imageCallback(const sensor_msgs::msg::Image::ConstShar
 #endif
 
         //收到错的，不进行目标检测与识别 受到true时不执行检测代码
-        if (!if_can_start_d435) { return; }
+        if (!if_can_start_d435) {
+            RCLCPP_INFO(this->get_logger(), "No camera in image");
+            return;
+        }
 
 #ifndef YOLOV8_DETECTOR_OFF
         //目标检测接口
